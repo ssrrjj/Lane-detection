@@ -1,0 +1,5 @@
+SUBREGION_WIDTH                50
+PLANE_DIST_THRESHOLD           0.05
+DBSCAN_MINPTS                  3
+LANEMARK_MINPTS                100
+LANE_WIDTH                     0.2
