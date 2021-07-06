@@ -9,7 +9,7 @@
 #include <vector>
 #include <math.h>
 #include "pcshow.h"
-#include "opencv2/opencv.hpp"
+
 using namespace std;
 
 
@@ -22,6 +22,7 @@ evalLaneCluster(pcl::PointCloud<pcl::PointXYZI>::Ptr& fullcloud, std::vector<int
   // TODO May have a direct API for PointCloud in PCL
   vector<float> xlimits = getXLimits(cloud);
   vector<float> ylimits = getYLimits(cloud);
+  static int cloud_idx = 0;
   int xOriented = 1; // road travel along the x Axis, 0 for y Axis otherwise
   if(abs(ylimits[1]-ylimits[0]) > abs(xlimits[1]-xlimits[0]))
     xOriented = 0;
@@ -70,6 +71,13 @@ evalLaneCluster(pcl::PointCloud<pcl::PointXYZI>::Ptr& fullcloud, std::vector<int
       laneflag=0;
   }
 #ifdef REC_DETECT
+  if (laneflag == 0) {
+
+    // toImage(cloud, "lane_"+std::to_string(cloud_idx)+".jpg");
+    // cloud_idx += 1;
+    if (!isRect(cloud))
+      laneflag = 1;
+  }
 // 2D projection of input point cloud. Check if it is a rectangle. TODO: set resolution. We need to use opencv. how to compile opencv with cmake
   // std::cout << "show the image" << std::endl;
   // int density = 10;
@@ -107,9 +115,10 @@ findLanesByConfig(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, float INTENSITY_T
   // Filter by intensity to get lane point
   vector<int> indsetFiltered;
   pcl::PointCloud<pcl::PointXYZI>::Ptr ptc = filterByIntensity(cloud, indsetFiltered, INTENSITY_THRESHOLD);
-  // custom_pcshow(ptc);
+
 #ifdef DEBUG
   std::cout<<"In findLanesByConfig: indsetFiltered.size() = "<<indsetFiltered.size()<<std::endl;
+  custom_pcshow(ptc);
 #endif
 
   // clustering
@@ -182,12 +191,13 @@ findLanes(pcl::PointCloud<pcl::PointXYZI>::Ptr& inCloud, LanePar par)
   custom_pcshow(inCloud);
 #endif
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud = filterByIntensity(inCloud, indsetFiltered, 0.000); // TODO
-#ifdef DEBUG
-  custom_pcshow(cloud);
-#endif
+// #ifdef DEBUG
+//   custom_pcshow(cloud);
+// #endif
 
   int numPts = cloud->points.size();
   std::vector<int> lanepts(numPts, 0);
+  vector<float> ilimits = getILimits(cloud);
 #ifdef DEBUG
   std::cout<<"numPts = "<<numPts<<std::endl;
 #endif
@@ -247,10 +257,11 @@ findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, s
   filterByField(cloud, indsetCloud, fieldname, roi[0], roi[1]);
 
   std::cout<<"INFO: process points in range "<<fieldname<<": "<<roi[0]<<", "<<roi[1]<<std::endl;
-  custom_pcshow(ptcROI);
+  //custom_pcshow(ptcROI);
 #ifdef DEBUG
   // Write the extracted plane to disk
   std::cout<<"INFO: process points in range "<<fieldname<<": "<<roi[0]<<", "<<roi[1]<<std::endl;
+  custom_pcshow(ptcROI);
   writer.write<pcl::PointXYZI> ("ptcROI_debug.pcd", *ptcROI, false);
   //custom_pcshow(ptcROI);
 #endif
@@ -261,10 +272,13 @@ findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, s
   // pcl::PointCloud<pcl::PointXYZI>::Ptr planeCloud = pcfitplane(ptcROI, indsetROI, distThreshold);
   pcfitplaneByROI(ptcROI, indsetROI, distThreshold, fieldname);
   pcl::PointCloud<pcl::PointXYZI>::Ptr planeCloud = select(ptcROI, indsetROI);
-  custom_pcshow(planeCloud);
-#ifdef DEBUG
-  custom_pcshow(planeCloud);
-#endif
+  // std::cout<<"plane cloud"<<std::endl;
+  // custom_pcshow(planeCloud);
+  // std::vector<int> indset2;
+  // planeCloud = regionGrowSeg(planeCloud, indset2);
+  // indsetROI = indexMapping(indsetROI, indset2);
+  // std::cout<<"plane removed outlier"<<std::endl;
+  //custom_pcshow(planeCloud);
 
 //  // Step 2: Find lane marks
   std::vector<int> indsetROIinCloud = indexMapping(indsetCloud,indsetROI);
@@ -282,7 +296,7 @@ findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, s
 #ifdef DEBUG
   // custom_pcshow(select(planeCloud, indsetPlane));
 #endif
-
+  //custom_pcshow(select(planeCloud, indsetPlane));
   std::vector<int> indset = indexMapping(indsetROIinCloud,indsetPlane);
 
   return indset;
@@ -290,7 +304,6 @@ findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, s
 
 void
 findLanesInPointcloud(string pcdfile, LanePar& par){
-
   std::cout<<"Running lane detection for "+pcdfile<<" ......"<<std::endl;
   // Read in point cloud to apply lane detection
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
@@ -306,6 +319,8 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
   vector<float> range;
   vector<float> xlimits = getXLimits(cloud);
   vector<float> ylimits = getYLimits(cloud);
+  std::cout<<"X limit:"<<xlimits[0]<<" "<<xlimits[1]<<std::endl;
+  std::cout<<"Y limit:"<<ylimits[0]<<" "<<ylimits[1]<<std::endl;
   if(xlimits[1]-xlimits[0]<ylimits[1]-ylimits[0]){
       fieldname = "y";
       range=ylimits;
@@ -324,7 +339,13 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
       if(i==N) roi[1] = range[1];
       std::vector<int> indset = findLanesByROI(cloud, roi, fieldname, par);
       pcl::PointCloud<pcl::PointXYZI>::Ptr lane_ptc = select(cloud, indset);
-      custom_pcshow(lane_ptc);
+      pcl::PCDWriter subwriter;
+      // #ifdef REC_DETECT
+      //   subwriter.write<pcl::PointXYZI> (pcdfile.substr(0, pcdfile.find(".pcd"))+"_rect_output"+std::to_string(i)+".pcd", *lane_ptc, false);
+      // #else
+      //   subwriter.write<pcl::PointXYZI> (pcdfile.substr(0, pcdfile.find(".pcd"))+"_output"+std::to_string(i)+".pcd", *lane_ptc, false);
+      // #endif
+      // custom_pcshow(lane_ptc);
       for(const auto & p: indset)
         lanepts[p]=1;
   }
@@ -337,8 +358,11 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
 
   // Write the extracted plane to disk
   pcl::PCDWriter writer;
-  writer.write<pcl::PointXYZI> (pcdfile+".output", *select(cloud, lane_indset), false);
-
+#ifdef REC_DETECT
+  writer.write<pcl::PointXYZI> (pcdfile.substr(0, pcdfile.find(".pcd"))+"_rect_output.pcd", *select(cloud, lane_indset), false);
+#else
+  writer.write<pcl::PointXYZI> (pcdfile.substr(0, pcdfile.find(".pcd"))+"_output.pcd", *select(cloud, lane_indset), false);
+#endif
 #ifdef DEBUG
   custom_pcshow(select(cloud, lane_indset));
 #endif

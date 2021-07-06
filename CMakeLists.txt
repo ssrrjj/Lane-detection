@@ -35,6 +35,11 @@ add_executable (ptcviewer examples/ptcviewer.cpp)
 target_include_directories(ptcviewer PUBLIC include/)
 target_link_libraries (ptcviewer lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} )
 
+# lane from plane
+add_executable (LFP examples/lane_from_plane.cpp)
+target_include_directories(LFP PUBLIC include/)
+target_link_libraries (LFP lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} )
+
 ################# Compile the tests ###################################
 
 # test plane model fitting

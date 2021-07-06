@@ -10,6 +10,14 @@
 using namespace std;
 using namespace cv;
 
+int clamp(int v, int lo, int hi) {
+  if (v>hi)
+    v = hi;
+  if (v<lo)
+    v = lo;
+  return v;
+}
+
 vector<float>
 getXLimits(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud)
 {
@@ -36,6 +44,20 @@ getYLimits(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud)
       if(pt.y<ylimits[0]) ylimits[0] = pt.y;
   }
   return ylimits;
+}
+
+vector<float>
+getILimits(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud)
+{
+  vector<float> ilimits(2,0.0);
+  if(cloud->points.size()==0) return ilimits;
+  ilimits[0]=cloud->points[0].intensity;
+  ilimits[1]=ilimits[0];
+  for(const auto & pt: cloud->points){
+      if(pt.intensity>ilimits[1]) ilimits[1] = pt.intensity;
+      if(pt.intensity<ilimits[0]) ilimits[0] = pt.intensity;
+  }
+  return ilimits;
 }
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr select(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, pcl::PointIndices::Ptr &inliers)
@@ -185,7 +207,7 @@ void drawHist(pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud, int n_bins, int highl
   return;
 }
 
-double Ostu_thresholding(pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud, int n_bins) {
+double Otsu_thresholding(pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud, int n_bins) {
   double min_intensity = 0, bin_width = 0;
   vector<int> hist = getHist(cloud, n_bins, bin_width, min_intensity);
   double q1=0, q2=0, mu1=0, mu2=0, sum = 0,sumB = 0, threshold = 0, var_max = 0;
@@ -211,7 +233,7 @@ double Ostu_thresholding(pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud, int n_bins
   // threshold += 3;
   // if (threshold>= n_bins)
   //   threshold = n_bins - 1;
-  drawHist(cloud, 100, int(threshold));
+  drawHist(cloud, n_bins, int(threshold));
   std::cout<<threshold<<std::endl;
   threshold = (threshold+0.5)*bin_width;
   std::cout<<threshold<<std::endl;
@@ -219,7 +241,7 @@ double Ostu_thresholding(pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud, int n_bins
 }
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr
-OstuFilter(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, string fieldname) {
+OtsuFilter(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, string fieldname) {
   //remove outlier
   // DBSCAN dbscan;
   // dbscan.setInputCloud (cloud);
@@ -241,10 +263,11 @@ OstuFilter(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, string fieldname) {
   // sor.setMeanK (30);
   // sor.setStddevMulThresh (2.5);
   // sor.filter (*cloud);
-  cloud = regionGrowSeg(cloud);
+  // vector<int> tmp;
+  // cloud = regionGrowSeg(cloud, tmp);
 
-  std::cout<<"Remove outliers"<<endl;
-  custom_pcshow(cloud);
+  // std::cout<<"Remove outliers"<<endl;
+  // custom_pcshow(cloud);
   vector<float> xlimits = getXLimits(cloud);
   vector<float> ylimits = getYLimits(cloud);
   double lb, ub;
@@ -266,7 +289,7 @@ OstuFilter(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, string fieldname) {
   std::cout<<"xbound:"<<xlimits[0]<<" "<<xlimits[1]<<std::endl;
   std::cout<<"ybound:"<<ylimits[0]<<" "<<ylimits[1]<<std::endl;
   std::cout<<"bound:"<<lb<<" "<<ub<<std::endl;
-  double subregion_width = 10;
+  double subregion_width = 5;
   double subregion_ub = lb + subregion_width;
   double subregion_lb = lb;
 
@@ -275,7 +298,7 @@ OstuFilter(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, string fieldname) {
      otherfield, subregion_lb, subregion_ub);
     std::cout<<"Show sub cloud "<<std::endl;
     custom_pcshow(sub_cloud);
-    double ostu_th = Ostu_thresholding(sub_cloud, 100);
+    double ostu_th = Otsu_thresholding(sub_cloud, 100);
 
     pcl::PointCloud<pcl::PointXYZI>::Ptr sub_highintensity = filterByIntensity(sub_cloud, indsethighintensity, ostu_th);
     std::cout<<"Show sub cloud filtered by ostu_th" <<std::endl;
@@ -291,7 +314,7 @@ OstuFilter(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, string fieldname) {
 }
 
 pcl::PointCloud <pcl::PointXYZI>::Ptr
-regionGrowSeg(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud) {
+regionGrowSeg(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<int> & idx) {
   pcl::search::Search<pcl::PointXYZI>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZI>);
   pcl::PointCloud <pcl::Normal>::Ptr normals (new pcl::PointCloud <pcl::Normal>);
   pcl::NormalEstimation<pcl::PointXYZI, pcl::Normal> normal_estimator;
@@ -333,5 +356,134 @@ regionGrowSeg(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud) {
   }
 
   pcl::PointCloud <pcl::PointXYZI>::Ptr biggest_cluster = select(cloud, clusters[max_cluster].indices);
+  idx = clusters[max_cluster].indices;
   return biggest_cluster;
+}
+
+void toImage(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, string save) {
+  std::cout << "show the image" << std::endl;
+  vector<float> ilimits = getILimits(cloud), ylimits = getYLimits(cloud), xlimits = getXLimits(cloud);
+  int density = 60;
+  int margin = 10;
+  int h = ceil(density*(ylimits[1] - ylimits[0])), w = ceil(density*(xlimits[1] - xlimits[0]));
+  h += 2*margin; w += 2*margin;
+  std::cout << h << ", " << w << ", " << cloud->points.size() <<std::endl;
+  // custom_pcshow(cloud);
+  cv::Mat img = cv::Mat::zeros(h, w, CV_8UC1);
+  cv::Mat img1 = cv::Mat::zeros(h, w, CV_8UC1);
+  int row, col;
+  double gamma = 1;
+
+  for (int idx = 0; idx < cloud->points.size(); ++idx) {
+      row = round(density*(cloud->points[idx].y - ylimits[0]))+margin;
+      row = clamp(row, 0, h-1);
+
+      col = round(density*(cloud->points[idx].x - xlimits[0]))+margin;
+      col = clamp(col, 0, w-1);
+      double pixel_val = (cloud->points[idx].intensity - ilimits[0])/(ilimits[1]-ilimits[0]);
+      pixel_val = pow(pixel_val, gamma);
+      int pixel_int = round(pixel_val*255);
+      pixel_int = clamp(pixel_int, 0, 255);
+      img.at<uchar>(row,col) = (uchar)pixel_int;
+      img1.at<uchar>(row,col) = 255;
+  }
+  if (save != "")
+    cv::imwrite(save, img);
+  
+  cv::imshow("img1", img1);
+  cv::waitKey(0);
+  cv::Mat closed;
+  cv::Mat kernel = cv::Mat::ones(7, 7, CV_8UC1);
+  cv::morphologyEx(img1, closed, MORPH_CLOSE, kernel);
+  cv::imshow("closed", closed);
+  cv::waitKey(0);
+  vector<vector<Point>> contours;
+  vector<Vec4i> hierarchy;
+  Mat contour_img = Mat::zeros(h, w, CV_8UC1);
+  findContours(closed, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+  int main_contour = 0;
+  int max_len = 0;
+  for( size_t i = 0; i< contours.size(); i++ )
+  {
+    if (contours[i].size() > max_len) {
+      max_len = contours[i].size();
+      main_contour = i;
+    }
+  }
+  Scalar color = Scalar( 255);
+  drawContours( contour_img, contours, main_contour, color, 2, LINE_8, hierarchy, 0 );
+  double contour_len = cv::arcLength(contours[main_contour], true);
+  vector<Point> approx_contour;
+  cv::approxPolyDP(contours[main_contour], approx_contour, 0.01*contour_len, true);
+  std::cout<<approx_contour.size()<<endl;
+
+  //drawContours(closed, contour_img, -1, Scalar(255), 1);
+  cv::imshow("contour", contour_img);
+  cv::waitKey(0);
+  // cv::Mat filtered;
+  // cv::adaptiveThreshold(img, filtered, 255,  ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 13, -1);
+  // cv::imshow("img", filtered);
+  // cv::waitKey(0);
+}
+
+bool isRect(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud) {
+  bool visual = false;
+  vector<float> ilimits = getILimits(cloud), ylimits = getYLimits(cloud), xlimits = getXLimits(cloud);
+  int density = 60;
+  int margin = 10;
+  int h = ceil(density*(ylimits[1] - ylimits[0])), w = ceil(density*(xlimits[1] - xlimits[0]));
+  h += 2*margin; w += 2*margin;
+  // std::cout << h << ", " << w << ", " << cloud->points.size() <<std::endl;
+  // custom_pcshow(cloud);
+  cv::Mat img = cv::Mat::zeros(h, w, CV_8UC1);
+  int row, col;
+
+  for (int idx = 0; idx < cloud->points.size(); ++idx) {
+      row = round(density*(cloud->points[idx].y - ylimits[0]))+margin;
+      row = clamp(row, 0, h-1);
+      col = round(density*(cloud->points[idx].x - xlimits[0]))+margin;
+      col = clamp(col, 0, w-1);
+      
+      img.at<uchar>(row,col) = 255;
+  }
+  
+
+  cv::Mat closed;
+  cv::Mat kernel = cv::Mat::ones(7, 7, CV_8UC1);
+  cv::morphologyEx(img, closed, MORPH_CLOSE, kernel);
+  
+  
+  vector<vector<Point>> contours;
+  vector<Vec4i> hierarchy;
+  findContours(closed, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+  int main_contour = 0;
+  int max_len = 0;
+  for( size_t i = 0; i< contours.size(); i++ )
+  {
+    if (contours[i].size() > max_len) {
+      max_len = contours[i].size();
+      main_contour = i;
+    }
+  }
+  
+  double contour_len = cv::arcLength(contours[main_contour], true);
+  vector<Point> approx_contour;
+  cv::approxPolyDP(contours[main_contour], approx_contour, 0.01*contour_len, true);
+
+  if (visual) {
+    cv::imshow("img", img);
+    cv::waitKey(0);
+    cv::imshow("closed", closed);
+    cv::waitKey(0);
+    // Contour image 
+    Mat contour_img = Mat::zeros(h, w, CV_8UC1);
+    Scalar color = Scalar( 255);
+    drawContours( contour_img, contours, main_contour, color, 2, LINE_8, hierarchy, 0 );
+    std::cout<<approx_contour.size()<<endl;
+    cv::imshow("contour", contour_img);
+    cv::waitKey(0);
+  }
+  if (approx_contour.size() > 10)
+    return false;
+  return true;
 }

@@ -67,8 +67,10 @@ void test_pcfitplane_bypiece(){
 }
 
 void test_pcfitplane_byROI(){
+  cout<<"read pointcloud " <<endl;
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
-    pcl::io::loadPCDFile ("../test/data/ptcROI_data00000_X347X407.pcd", *cloud);
+    pcl::io::loadPCDFile ("../test/data/ptcROI_debug.pcd", *cloud);
+  //custom_pcshow(cloud);
 #ifdef DEBUG
   std::cout<<"cloud has "<<cloud->points.size()<<" total points."<<std::endl;
   custom_pcshow(cloud);
@@ -76,7 +78,8 @@ void test_pcfitplane_byROI(){
 
   float distThreshold = 0.15;
   vector<int> indset;
-  pcfitplaneByROI(cloud, indset, distThreshold);
+  cout<<"fit by roi"<<endl;
+  pcfitplaneByROI(cloud, indset, distThreshold, "y");
   pcl::PointCloud<pcl::PointXYZI>::Ptr ptcPlane = select(cloud, indset);
 
 #ifdef DEBUG

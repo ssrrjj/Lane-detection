@@ -18,7 +18,7 @@ using namespace std;
 class LanePar{
 public:
   LanePar(){
-    subregion_width = 25.0;
+    subregion_width = 50.0;
     plane_dist_threshold = 0.05;
     lane_width = 0.2;
     dbscan_minpts = 10;

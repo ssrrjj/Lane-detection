@@ -42,6 +42,9 @@ getXLimits(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
 vector<float>
 getYLimits(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
 
+vector<float>
+getILimits(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
+
 pcl::PointCloud<pcl::PointXYZI>::Ptr
 select(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, pcl::PointIndices::Ptr &inliers);
 
@@ -67,11 +70,15 @@ float maxvalue(vector<float>&);
 float stdv(vector<float>&);
 
 void drawHist(pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud, int n_bins = 50, int highlight = -1);
-double Ostu_thresholding(pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud, int n_bins);
+double Otsu_thresholding(pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud, int n_bins);
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr
-OstuFilter(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, string fieldname);
+OtsuFilter(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, string fieldname);
 
 pcl::PointCloud <pcl::PointXYZI>::Ptr
-regionGrowSeg(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
+regionGrowSeg(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<int> & idx);
+
+void toImage(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, string save="");
+
+bool isRect(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
 #endif /* INCLUDE_UTILS_H_ */
