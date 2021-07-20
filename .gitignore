@@ -1,2 +1,6 @@
 build/
 test/data
+papers.odt
+out/
+python/
+.vs/

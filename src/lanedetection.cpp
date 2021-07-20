@@ -203,6 +203,8 @@ findLanes(pcl::PointCloud<pcl::PointXYZI>::Ptr& inCloud, LanePar par)
 #endif
   // find lanes with multiple configurations
   // intensity_threshold=0.1, eps = 0.2
+  custom_pcshow(cloud);
+  drawHist(cloud, 100);
   std::vector<int> indset1 = findLanesByConfig(cloud, 0.1, 0.2, par);
 #ifdef DEBUG
   std::cout<<"indset1.size() = "<<indset1.size()<<std::endl;
@@ -319,6 +321,12 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
   vector<float> range;
   vector<float> xlimits = getXLimits(cloud);
   vector<float> ylimits = getYLimits(cloud);
+  vector<float> ilimits = getILimits(cloud);
+  for (int i = 0 ; i < cloud->points.size(); i++) {
+    cloud->points[i].intensity /= ilimits[1];
+  }
+  ilimits = getILimits(cloud);
+  cout<<"ilimits "<<ilimits[1]<<endl;
   std::cout<<"X limit:"<<xlimits[0]<<" "<<xlimits[1]<<std::endl;
   std::cout<<"Y limit:"<<ylimits[0]<<" "<<ylimits[1]<<std::endl;
   if(xlimits[1]-xlimits[0]<ylimits[1]-ylimits[0]){
@@ -348,6 +356,7 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
       // custom_pcshow(lane_ptc);
       for(const auto & p: indset)
         lanepts[p]=1;
+      
   }
   std::vector<int> lane_indset;
   for(int i=0; i<numPts; i++){

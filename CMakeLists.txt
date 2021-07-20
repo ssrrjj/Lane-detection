@@ -2,9 +2,22 @@ cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
 project(planar_segmentation)
 
-find_package(PCL 1.8 REQUIRED)
+find_package(PCL  REQUIRED)
 find_package( OpenCV REQUIRED )
 # cmake -DCMAKE_BUILD_TYPE=Debug ../
+
+# The options need to be the same as Open3D's default
+# If Open3D is configured and built with custom options, you'll also need to
+# specify the same custom options.
+option(STATIC_WINDOWS_RUNTIME "Use static (MT/MTd) Windows runtime" ON)
+if(STATIC_WINDOWS_RUNTIME)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+else()
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+endif()
+
+# Find installed Open3D, which exports Open3D::Open3D
+find_package(Open3D REQUIRED)
 
 # cmake -DUSE_DEBUG=ON ..
 option(USE_DEBUG "Enter debug mode" OFF)
@@ -38,15 +51,25 @@ target_link_libraries (ptcviewer lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} )
 # lane from plane
 add_executable (LFP examples/lane_from_plane.cpp)
 target_include_directories(LFP PUBLIC include/)
-target_link_libraries (LFP lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} )
+target_link_libraries (LFP lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D)
 
 ################# Compile the tests ###################################
 
 # test plane model fitting
-#add_executable (test_pcfitplane test/test_pcfitplane.cpp)
-#target_include_directories(test_pcfitplane PUBLIC include/)
-#target_link_libraries (test_pcfitplane lanedetection ${PCL_LIBRARIES})
+add_executable (test_pcfitplane test/test_pcfitplane.cpp)
+target_include_directories(test_pcfitplane PUBLIC include/)
+target_link_libraries (test_pcfitplane lanedetection ${PCL_LIBRARIES} Open3D::Open3D)
 
+#if(WIN32)
+get_target_property(open3d_type Open3D::Open3D TYPE)
+if(open3d_type STREQUAL "SHARED_LIBRARY")
+    message(STATUS "Copying Open3D.dll to ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
+    add_custom_command(TARGET Draw POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy
+                                ${CMAKE_INSTALL_PREFIX}/bin/Open3D.dll
+                                ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
+endif()
+#endif()
 # test DBSCAN
 #add_executable (test_dbscan test/test_dbscan.cpp)
 #target_include_directories(test_dbscan PUBLIC include/)

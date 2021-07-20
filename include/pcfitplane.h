@@ -23,7 +23,7 @@
 #include <string>
 
 using namespace std;
-
+#define DEBUG
 pcl::PointCloud<pcl::PointXYZI>::Ptr
 pcfitplane(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float distThreshold);
 

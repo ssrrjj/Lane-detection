@@ -1,24 +1,22 @@
 #include "lanedetection.h"
+#include "open3d/Open3D.h"
+using namespace std;
 int main(int argc, char* argv[])
 {
-  string pcdfile;
-  string parfile;
-  if(argc>=2){
-      pcdfile = argv[1];
-      if(argc>=3) parfile = argv[2];
-  }else{
-    std::cout<<"Usage: lanedet [pcdfile] [parfile] \n"<<std::endl;
-    std::cout<<"Please provide a point cloud input file in pcd format."<<std::endl;
-    std::cout<<"Exit without lane detection. \n"<<std::endl;
-    return 1;
-  }
-  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::io::loadPCDFile (pcdfile, *cloud);
-  // double th = Otsu_thresholding(cloud, 200);
-  // std::cout<<th<<endl;
-  // cloud = filterByIntensity(cloud, th);
-  // custom_pcshow(cloud);
-  //OtsuFilter(cloud, "x");
-  toImage(cloud);
-  return (0);
+	string pcdfile;
+	auto cloud_ptr = std::make_shared<open3d::geometry::PointCloud>();
+	if (!open3d::io::ReadPointCloud("ptcROI_debug.pcd", *cloud_ptr)) {
+		cout << "unable to open pcd" << endl;
+		return 0; 
+	}
+	//open3d::visualization::DrawGeometries({ cloud_ptr });
+	std::tuple<Eigen::Vector4d, std::vector<size_t>>plane;
+	plane = cloud_ptr->SegmentPlane(0.05, 3, 1000);
+	Eigen::Vector4d plane_model = get<0>(plane);
+	std::vector<size_t> inliers = get<1>(plane);
+	auto inlier_cloud = std::make_shared<open3d::geometry::PointCloud>();
+	inlier_cloud = cloud_ptr->SelectByIndex(inliers, FALSE);
+	open3d::visualization::DrawGeometries({ inlier_cloud });
+	return (0);
+
 }

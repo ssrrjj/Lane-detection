@@ -8,6 +8,8 @@
 #include "pcfitplane.h"
 #include "utils.h"
 #include "pcshow.h"
+#include "open3d/Open3D.h"
+
 
 void test_pcfitplane(){
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
@@ -21,7 +23,7 @@ void test_pcfitplane(){
   // custom_pcshow(cloud);
 
   // Step 1: Extract road plane
-  float distThreshold = 0.15;
+  float distThreshold = 0.3;
   pcl::PointCloud<pcl::PointXYZI>::Ptr inlierCloud = pcfitplane(cloud, distThreshold);
 #ifdef DEBUG
   std::cout<<"inlierCloud has "<<inlierCloud->points.size()<<" total points."<<std::endl;
@@ -69,19 +71,21 @@ void test_pcfitplane_bypiece(){
 void test_pcfitplane_byROI(){
   cout<<"read pointcloud " <<endl;
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
-    pcl::io::loadPCDFile ("../test/data/ptcROI_debug.pcd", *cloud);
+    pcl::io::loadPCDFile ("../../test/data/ptcROI_debug.pcd", *cloud);
   //custom_pcshow(cloud);
 #ifdef DEBUG
   std::cout<<"cloud has "<<cloud->points.size()<<" total points."<<std::endl;
   custom_pcshow(cloud);
 #endif
 
-  float distThreshold = 0.15;
+  float distThreshold = 0.8;
+  cout<<"disThreshold: "<<distThreshold<<endl;
   vector<int> indset;
   cout<<"fit by roi"<<endl;
   pcfitplaneByROI(cloud, indset, distThreshold, "y");
   pcl::PointCloud<pcl::PointXYZI>::Ptr ptcPlane = select(cloud, indset);
-
+  
+  
 #ifdef DEBUG
   pcl::PCDWriter writer;
   writer.write<pcl::PointXYZI> ("extracted_plane_bypieces.pcd", *ptcPlane, false);

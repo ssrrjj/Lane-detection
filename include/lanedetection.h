@@ -16,7 +16,7 @@
 #include "utils.h"
 #include "lanepar.h"
 
-#define DEBUG 1
+//#define DEBUG 1
 //#define REC_DETECT 1
 void
 findLanesInPointcloud(string pcdfile);
