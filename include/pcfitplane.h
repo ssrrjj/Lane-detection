@@ -21,9 +21,10 @@
 #include <pcl/point_types.h>
 #include <pcl/filters/passthrough.h>
 #include <string>
+#include "open3d/Open3D.h"
 
 using namespace std;
-#define DEBUG
+
 pcl::PointCloud<pcl::PointXYZI>::Ptr
 pcfitplane(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float distThreshold);
 
@@ -31,7 +32,7 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr
 pcfitplane(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, std::vector<int>&, float distThreshold);
 
 void
-pcfitplaneByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, std::vector<int>&, float, string="x");
+pcfitplaneByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, std::vector<int>& indset, Eigen::Vector4d& plane_model, float distThreshold, string fieldname = "x");
 
 
 #endif /* INCLUDE_PCFITPLANE_H_ */

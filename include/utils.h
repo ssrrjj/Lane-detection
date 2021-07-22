@@ -26,6 +26,7 @@
 #include <pcl/search/search.h>
 #include <pcl/search/kdtree.h>
 #include <pcl/features/normal_3d.h>
+#include <pcl/common/impl/transforms.hpp>
 
 #include <string>
 #include "opencv2/opencv.hpp"
@@ -33,9 +34,11 @@
 #include <algorithm>
 #include "pcshow.h"
 #include "dbscan.h"
+#include "open3d/Open3D.h"
+#include <math.h>
 
 using namespace std;
-
+typedef pcl::PointCloud<pcl::PointXYZI>::Ptr CloudPtr;
 vector<float>
 getXLimits(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
 
@@ -78,7 +81,13 @@ OtsuFilter(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, string fieldname);
 pcl::PointCloud <pcl::PointXYZI>::Ptr
 regionGrowSeg(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<int> & idx);
 
-void toImage(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, string save="");
+vector<int> findLaneByImage(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, Eigen::Vector4d plane_model, float grid_size, string save="");
 
 bool isRect(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
+
+// convert pcl::pointcloud to open3d::pointcloud
+std::shared_ptr<open3d::geometry::PointCloud> pclToO3d(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
+
+
+cv::Mat findLaneInImage(cv::Mat uimage);
 #endif /* INCLUDE_UTILS_H_ */

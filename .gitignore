@@ -4,3 +4,5 @@ papers.odt
 out/
 python/
 .vs/
+data/
+CMakeSettings.json

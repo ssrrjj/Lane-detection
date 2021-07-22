@@ -82,7 +82,8 @@ void test_pcfitplane_byROI(){
   cout<<"disThreshold: "<<distThreshold<<endl;
   vector<int> indset;
   cout<<"fit by roi"<<endl;
-  pcfitplaneByROI(cloud, indset, distThreshold, "y");
+  Eigen::Vector4d plane_model;
+  pcfitplaneByROI(cloud, indset, plane_model, distThreshold, "y");
   pcl::PointCloud<pcl::PointXYZI>::Ptr ptcPlane = select(cloud, indset);
   
   

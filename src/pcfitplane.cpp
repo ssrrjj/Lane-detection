@@ -157,7 +157,7 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr pcfitplane(pcl::PointCloud<pcl::PointXYZI>:
 
 
 void
-pcfitplaneByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, std::vector<int>& indset, float distThreshold, string fieldname)
+pcfitplaneByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, std::vector<int>& indset, Eigen::Vector4d & plane_model, float distThreshold, string fieldname)
 {
   float piece_width = 50;
   vector<float> range;
@@ -167,17 +167,33 @@ pcfitplaneByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, std::vector<int>& i
   if(fieldname=="y"){
       range = getYLimits(cloud);
   }
-  int N = (range[1]-range[0]+1)/piece_width;
-  N = 1;
-  for(int i=0; i<N;i++){
-      std::vector<int> indsetROI;
-      std::vector<int> indsetPlane;
-      float lb = range[0]+piece_width*i;
-      float ub = range[0]+piece_width*(i+1);
-      if(i==N-1) ub = range[1];
-    pcl::PointCloud<pcl::PointXYZI>::Ptr inlierCloud =
-	pcfitplane(filterByField(cloud, indsetROI, fieldname, lb,ub), indsetPlane, distThreshold);
-      vector<int> ind = indexMapping(indsetROI, indsetPlane);
-      indset.insert(indset.end(), ind.begin(), ind.end());
+
+  // Split into pieces 
+ // int N = (range[1]-range[0]+1)/piece_width;
+ //   
+ // for(int i=0; i<N;i++){
+ //     std::vector<int> indsetROI;
+ //     std::vector<int> indsetPlane;
+ //     float lb = range[0]+piece_width*i;
+ //     float ub = range[0]+piece_width*(i+1);
+ //     if(i==N-1) ub = range[1];
+ //   pcl::PointCloud<pcl::PointXYZI>::Ptr inlierCloud =
+	//pcfitplane(filterByField(cloud, indsetROI, fieldname, lb,ub), indsetPlane, distThreshold);
+ //     vector<int> ind = indexMapping(indsetROI, indsetPlane);
+ //     indset.insert(indset.end(), ind.begin(), ind.end());
+ // }
+
+  auto cloud_ptr = pclToO3d(cloud);
+
+  std::tuple<Eigen::Vector4d, std::vector<size_t>>plane;
+  plane = cloud_ptr->SegmentPlane(0.05, 3, 1000);
+  plane_model = get<0>(plane);
+  std::vector<size_t> inliers = get<1>(plane);
+  auto inlier_cloud = std::make_shared<open3d::geometry::PointCloud>();
+  inlier_cloud = cloud_ptr->SelectByIndex(inliers, FALSE);
+  indset.clear();
+  for (int i = 0; i < inliers.size(); i++) {
+      indset.push_back((int)inliers[i]);
   }
+  // open3d::visualization::DrawGeometries({ inlier_cloud });
 }

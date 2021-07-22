@@ -34,14 +34,14 @@ file(GLOB CPP_SOURCES src/*.cpp)
 add_library( lanedetection ${CPP_SOURCES})
 #target_compile_options(lanedetection PRIVATE -O3)
 target_include_directories(lanedetection PUBLIC include/ src/)
-target_link_libraries( lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} )
+target_link_libraries( lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D)
 
 ################# Compile the applications ###########################
 
 # Application lanedet
 add_executable (lanedet examples/lanedet.cpp)
 target_include_directories(lanedet PUBLIC include/)
-target_link_libraries (lanedet lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} )
+target_link_libraries (lanedet lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D)
 
 # pointcloudview
 add_executable (ptcviewer examples/ptcviewer.cpp)
