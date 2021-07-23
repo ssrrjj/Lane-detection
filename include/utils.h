@@ -36,6 +36,7 @@
 #include "dbscan.h"
 #include "open3d/Open3D.h"
 #include <math.h>
+#define VERBOSE 0
 
 using namespace std;
 typedef pcl::PointCloud<pcl::PointXYZI>::Ptr CloudPtr;
@@ -90,4 +91,5 @@ std::shared_ptr<open3d::geometry::PointCloud> pclToO3d(pcl::PointCloud<pcl::Poin
 
 
 cv::Mat findLaneInImage(cv::Mat uimage);
+vector<string> SplitFilename(const std::string& str);
 #endif /* INCLUDE_UTILS_H_ */

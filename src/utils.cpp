@@ -382,9 +382,10 @@ Mat toImage(CloudPtr cloud, Eigen::Vector4d plane_model, float grid_size, vector
     pcl::PointCloud<pcl::PointXYZI>::Ptr transformed_cloud(new pcl::PointCloud<pcl::PointXYZI>);
 
     pcl::transformPointCloud(*cloud, *transformed_cloud, T);
-    cout << "show transformed\n" << endl;
-    custom_pcshow(transformed_cloud);
-
+    if (VERBOSE) {
+        cout << "show transformed\n" << endl;
+        custom_pcshow(transformed_cloud);
+    }
     vector<float> xlimit = getXLimits(transformed_cloud);
     vector<float> ylimit = getYLimits(transformed_cloud);
     float xmin = xlimit[0], ymin = ylimit[0], xmax = xlimit[1], ymax = ylimit[1];
@@ -399,7 +400,7 @@ Mat toImage(CloudPtr cloud, Eigen::Vector4d plane_model, float grid_size, vector
     vector<vector<pcl::PointXYZI>> pixels(h * w);
     // map pixel to points in cloud
     pixel2cloud.resize(h * w);
-    std::cout << "create pixels" << endl;
+    //std::cout << "create pixels" << endl;
     for (int idx = 0; idx < n; idx++) {
         float x = 0., y = 0.;
         x = transformed_cloud->points[idx].x;
@@ -451,14 +452,16 @@ Mat toImage(CloudPtr cloud, Eigen::Vector4d plane_model, float grid_size, vector
             uimage.at<uchar>(i, j) = (uchar)pixel_int;
         }
     }
-    cout << "getimage" << endl;
-    imwrite("plane_image.png", uimage);
-    imshow("image", uimage);
-    waitKey(0);
+    if (VERBOSE) {
+        cout << "getimage" << endl;
+        imwrite("plane_image.png", uimage);
+        imshow("image", uimage);
+        waitKey(0);
+    }
     return uimage;
 }
 
-vector<vector<int>> ImageDbscan(Mat& image, vector<int> &cloud2pixel ) {
+vector<vector<int>> ImageDbscan(Mat& image, vector<int> &cloud2pixel, float eps = 5.0, int min_pts = 10 ) {
     // create a point cloud
     int h = image.rows;
     int w = image.cols;
@@ -495,7 +498,7 @@ Mat findLaneInImage(Mat uimage) {
     vector<int>cloud2pixel;
     vector<vector<int>> clusters = ImageDbscan(uimage, cloud2pixel);
     int numClusters = clusters.size();
-    cout << "get clusters " << clusters.size() << endl;
+    //cout << "get clusters " << clusters.size() << endl;
     int max_cluster_size = 0, max_cluster_idx = 0;
     for (int i = 0; i < numClusters; i++) {
         if (clusters[i].size() > max_cluster_size) {
@@ -505,12 +508,14 @@ Mat findLaneInImage(Mat uimage) {
     }
     
     cv::Mat mask = cv::Mat::zeros(h, w, CV_8UC1);
-    cout << "compute mask" << endl;
+    cv::Mat mask_inv = cv::Mat::ones(h, w, CV_8UC1);
+    //cout << "compute mask" << endl;
     for (int point_idx : clusters[max_cluster_idx]) {
         int pixel_idx = cloud2pixel[point_idx];
         int i = pixel_idx / w;
         int j = pixel_idx % w;
         mask.at<uchar>(i, j) = 1;
+        mask_inv.at<uchar>(i, j) = 0;
     }
     //cv::imshow("mask", mask);
     //cv::waitKey(0);
@@ -522,41 +527,41 @@ Mat findLaneInImage(Mat uimage) {
     }
 
 
-    // get contours
-    vector<vector<Point> > contours;
-    vector<Vec4i> hierarchy;
-    cv::findContours(mask, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_NONE);
-    cout << "find contours " << contours.size() << endl;
-    // remove the points near the contour
-    cv::Mat_<float> features(0, 2);
-    cv::Mat contour_mask = cv::Mat::zeros(h, w, CV_8UC1);
-    for (auto& contour : contours) {
-        for (auto& point : contour) {
-            cv::Mat row = (cv::Mat_<float>(1, 2) << point.x, point.y);
-            features.push_back(row);
-        }
-    }
-    cv::flann::Index flann_index(features, cv::flann::KDTreeIndexParams(1));
+    //// get contours
+    //vector<vector<Point> > contours;
+    //vector<Vec4i> hierarchy;
+    //cv::findContours(mask, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_NONE);
+    //cout << "find contours " << contours.size() << endl;
+    //// remove the points near the contour
+    //cv::Mat_<float> features(0, 2);
+    //cv::Mat contour_mask = cv::Mat::zeros(h, w, CV_8UC1);
+    //for (auto& contour : contours) {
+    //    for (auto& point : contour) {
+    //        cv::Mat row = (cv::Mat_<float>(1, 2) << point.x, point.y);
+    //        features.push_back(row);
+    //    }
+    //}
+    //cv::flann::Index flann_index(features, cv::flann::KDTreeIndexParams(1));
 
-    //search nearest neighbor. If contour is nearby, remove the point.
-    unsigned int max_neighbours = 3;
+    ////search nearest neighbor. If contour is nearby, remove the point.
+    //unsigned int max_neighbours = 3;
 
-    double radius = 3.;
+    //double radius = 3.;
 
-    for (int i = 0; i < h; i++) {
-        for (int j = 0; j < w; j++) {
-            cv::Mat query = (cv::Mat_<float>(1, 2) << j, i);
-            cv::Mat indices, dists; //neither assume type nor size here !
-            int n_nei = flann_index.radiusSearch(query, indices, dists, radius, max_neighbours, cv::flann::SearchParams(32));
-            //cout << n_nei << endl;
-            if (n_nei > 0) {
-                contour_mask.at<uchar>(i, j) = 255;
-            }
-        }
-    }
+    //for (int i = 0; i < h; i++) {
+    //    for (int j = 0; j < w; j++) {
+    //        cv::Mat query = (cv::Mat_<float>(1, 2) << j, i);
+    //        cv::Mat indices, dists; //neither assume type nor size here !
+    //        int n_nei = flann_index.radiusSearch(query, indices, dists, radius, max_neighbours, cv::flann::SearchParams(32));
+    //        //cout << n_nei << endl;
+    //        if (n_nei > 0) {
+    //            contour_mask.at<uchar>(i, j) = 255;
+    //        }
+    //    }
+    //}
 
-    cv::imshow("", contour_mask);
-    waitKey(0);
+    //cv::imshow("", contour_mask);
+    //waitKey(0);
     static Mat lookUpTable(1, 256, CV_8U);
     static bool compute_table = TRUE;
     float gamma_ = 0.5;
@@ -571,19 +576,29 @@ Mat findLaneInImage(Mat uimage) {
 
     LUT(res, lookUpTable, uimage);
 
-
-
+    
     //cout << "save road image" << endl;
     cv::imwrite("road_image.png", uimage);
-    cv::imshow("road_image", uimage);
-    waitKey(0);
+    if (VERBOSE) {
+        cv::imshow("road_image", uimage);
+        waitKey(0);
+    }
+    //inpaint road image
+    Mat for_inpaint = uimage.clone();
+    cv::inpaint(for_inpaint, mask_inv, uimage, 11, cv::INPAINT_TELEA);
+
+    if (VERBOSE) {
+        imshow("inpainted road image", uimage);
+        waitKey(0);
+    }
+
     // gaussian blur to remove noise
     cv::Mat blur(h, w, CV_8UC1);
     cv::GaussianBlur(uimage, blur, cv::Size(5, 5), 0);
     // adaptive thresholding
     cv::Mat lanemark(h, w, CV_8UC1);
     cv::adaptiveThreshold(blur, lanemark, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY, 11, -5);
-    cv::imshow("before contour removal", lanemark);
+    /*cv::imshow("before contour removal", lanemark);
     waitKey(0);
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
@@ -591,18 +606,36 @@ Mat findLaneInImage(Mat uimage) {
                 lanemark.at<uchar>(i, j) = 0;
             }
         }
-    }
+    }*/
 
     //cout << "save lane image" << endl;
     cv::imwrite("lane_image.png", lanemark);
-     cv::imshow("after contour removal", lanemark);
-    waitKey(0);
-    
+    if (VERBOSE) {
+        cv::imshow("after contour removal", lanemark);
+        waitKey(0);
+    }
 
     return lanemark;
 
 }
 
+Mat removeFalsePostive(Mat lane_mark, string field_name) {
+    vector<int> cloud2pixel;
+    vector<vector<int>> clusters= ImageDbscan(lane_mark, cloud2pixel, 5.0, 3);
+    int h = lane_mark.rows, w = lane_mark.cols;
+    Mat ret = Mat::zeros(h, w, CV_8UC1);
+    for (auto& cluster : clusters) {
+        if (cluster.size() > 15) {
+            for (int point : cluster) {
+                int pixel_idx = cloud2pixel[point];
+                int i = pixel_idx / w;
+                int j = pixel_idx % w;
+                ret.at<uchar>(i, j) = 255;
+            }
+        }
+    }
+    return ret;
+}
 
 vector<int> findLaneByImage(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, Eigen::Vector4d plane_model, float grid_size, string save) {
     //double a, b, c, d;
@@ -828,6 +861,11 @@ vector<int> findLaneByImage(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, Eigen::
     Mat uimage = toImage(cloud, plane_model, grid_size, pixel2cloud);
     
     Mat lanemark = findLaneInImage(uimage);
+    lanemark = removeFalsePostive(lanemark, "x");
+    if (VERBOSE) {
+        imshow("remove fp", lanemark);
+        waitKey(0);
+    }
     int h = uimage.rows;
     int w = uimage.cols;
 
@@ -945,3 +983,15 @@ std::shared_ptr<open3d::geometry::PointCloud> pclToO3d(pcl::PointCloud<pcl::Poin
 //    return pcl_cloud;
 //
 //}
+
+
+vector<string> SplitFilename(const std::string& str)
+{
+    
+    std::cout << "Splitting: " << str << '\n';
+    std::size_t found = str.find_last_of("/\\");
+    string path = str.substr(0, found);
+    string file = str.substr(found + 1);
+    vector<string> ret{path, file};
+    return ret;
+}

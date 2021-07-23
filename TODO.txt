@@ -1,2 +1,8 @@
 1. After gaussian thresholding, the boundries will always be detected as lane mark. Need a proper way to remove. 
-   If I remove all pixels, some true mark points will also be removed.
+   If I remove all pixels, some true mark points will also be removed. DONE
+
+2. Some area with low intensity and density cannot be detected. How to compensate density.
+3. Use detection results of previous piece to enhance current. For example, if I detect a lane 'l' in previous piece, then lane marks probably
+   also appear near 'l' in current piece.
+	
+	check data point_cloud_enu_ie_2161_251241_0_2161_253021_0_00007

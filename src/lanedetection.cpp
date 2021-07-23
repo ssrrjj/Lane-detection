@@ -327,15 +327,20 @@ findLanes_adp(pcl::PointCloud<pcl::PointXYZI>::Ptr& inCloud, Eigen::Vector4d pla
     vector<int> mark_idx = findLaneByImage(inCloud, plane_model, grid_size);
 
     CloudPtr mark_cloud = select(inCloud, mark_idx);
-    //cout << "show mark cloud" << endl;
-    //custom_pcshow(mark_cloud);
-
-    vector<int>valid_mark_idx = validateMark(mark_cloud);
-    CloudPtr valid_mark_cloud = select(mark_cloud, valid_mark_idx);
+    if (VERBOSE) {
+        cout << "show mark cloud" << endl;
+        custom_pcshow(mark_cloud);
+    }
+    //vector<int>valid_mark_idx = validateMark(mark_cloud);
+    //vector<int>& valid_mark_idx = mark_idx;
+    //CloudPtr valid_mark_cloud = select(mark_cloud, valid_mark_idx);
     //cout << "show valid mark cloud" << endl;
     //custom_pcshow(valid_mark_cloud);
-    for (const auto& p : valid_mark_idx)
-        lanepts[mark_idx[p]] = 1;
+    //for (const auto& p : valid_mark_idx) 
+    //    lanepts[mark_idx[p]] = 1;
+    for (const auto& p : mark_idx) {
+        lanepts[p] = 1;
+    }
     for (int i = 0; i < numPts; i++) {
         if (lanepts[i] > 0) indset.push_back(indsetFiltered[i]); 
     }
@@ -402,7 +407,7 @@ findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, s
 #ifdef DEBUG
   // custom_pcshow(select(planeCloud, indsetPlane));
 #endif
-  custom_pcshow(select(planeCloud, indsetPlane));
+
   std::vector<int> indset = indexMapping(indsetROIinCloud,indsetPlane);
 
   return indset;
@@ -474,7 +479,9 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
 #ifdef REC_DETECT
   writer.write<pcl::PointXYZI> (pcdfile.substr(0, pcdfile.find(".pcd"))+"_rect_output.pcd", *select(cloud, lane_indset), false);
 #else
-  writer.write<pcl::PointXYZI> (pcdfile.substr(0, pcdfile.find(".pcd"))+"_output.pcd", *select(cloud, lane_indset), false);
+  vector<string> path_name = SplitFilename(pcdfile);
+
+  writer.write<pcl::PointXYZI> (path_name[0]+"/result/"+path_name[1].substr(0, path_name[1].length()-4) + "_output.pcd", *select(cloud, lane_indset), false);
 #endif
 #ifdef DEBUG
   custom_pcshow(select(cloud, lane_indset));
