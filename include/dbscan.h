@@ -42,5 +42,4 @@ public:
   segment (float eps, int minPts);
   std::vector<std::vector<int>> clusters;
 };
-
 #endif /* INCLUDE_DBSCAN_H_ */

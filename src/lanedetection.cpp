@@ -9,9 +9,10 @@
 #include <vector>
 #include <math.h>
 #include "pcshow.h"
+#include <filesystem>
 
 using namespace std;
-
+using namespace std::filesystem;
 
 
 int
@@ -303,7 +304,7 @@ validateMark(CloudPtr inCloud) {
     return indset;
 }
 std::vector<int>
-findLanes_adp(pcl::PointCloud<pcl::PointXYZI>::Ptr& inCloud, Eigen::Vector4d plane_model, float grid_size) {
+findLanes_adp(pcl::PointCloud<pcl::PointXYZI>::Ptr& inCloud, Eigen::Vector4d plane_model, float grid_size, LanePar par) {
     
 
 
@@ -324,7 +325,7 @@ findLanes_adp(pcl::PointCloud<pcl::PointXYZI>::Ptr& inCloud, Eigen::Vector4d pla
 #ifdef DEBUG
     std::cout << "numPts = " << numPts << std::endl;
 #endif
-    vector<int> mark_idx = findLaneByImage(inCloud, plane_model, grid_size);
+    vector<int> mark_idx = findLaneByImage(inCloud, plane_model, grid_size, par);
 
     CloudPtr mark_cloud = select(inCloud, mark_idx);
     if (VERBOSE) {
@@ -367,7 +368,7 @@ findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, s
   writer.write<pcl::PointXYZI> ("ptcROI_debug.pcd", *ptcROI, false);
   //custom_pcshow(ptcROI);
 #endif
-
+  writer.write<pcl::PointXYZI>("ptcROI_debug.pcd", *ptcROI, false);
   // Step 1: Extract road plane
   float distThreshold = par.plane_dist_threshold; // float distThreshold = 0.05; // float distThreshold = 0.15;
   vector<int> indsetROI;
@@ -402,7 +403,19 @@ findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, s
 
 
   //std::vector<int> indsetPlane = findLanes(planeCloud, par);
-  std::vector<int> indsetPlane = findLanes_adp(planeCloud, plane_model, 0.1);
+  if (fieldname == "y") {
+      Eigen::Matrix4d T;
+      T.row(0) = Eigen::Vector4d(0., 1., 0., 0.);
+      T.row(1) = Eigen::Vector4d(1., 0., 0., 0.);
+      T.row(2) = Eigen::Vector4d(0., 0., 1., 0.);
+      T.row(3) = Eigen::Vector4d(0., 0., 0., 1.);
+      pcl::PointCloud<pcl::PointXYZI>::Ptr transformed_cloud(new pcl::PointCloud<pcl::PointXYZI>);
+      pcl::transformPointCloud(*planeCloud, *transformed_cloud, T);
+      planeCloud = transformed_cloud;
+
+  }
+
+  std::vector<int> indsetPlane = findLanes_adp(planeCloud, plane_model, 0.075, par);
 
 #ifdef DEBUG
   // custom_pcshow(select(planeCloud, indsetPlane));
@@ -449,8 +462,9 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
   int N = (range[1]-range[0]+1)/subregion_width;
 
   vector<float> roi(2,0.0);
-
-  for(int i=0; i<=N; i++){
+  assert(par.start <= N);
+  
+  for(int i=(N+par.start)%N; i<=N; i++){
       roi[0] = range[0]+subregion_width*i-10;
       roi[1] = range[0]+subregion_width*(i+1);
       if(i==N) roi[1] = range[1];
@@ -480,18 +494,29 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
   writer.write<pcl::PointXYZI> (pcdfile.substr(0, pcdfile.find(".pcd"))+"_rect_output.pcd", *select(cloud, lane_indset), false);
 #else
   vector<string> path_name = SplitFilename(pcdfile);
-
-  writer.write<pcl::PointXYZI> (path_name[0]+"/result/"+path_name[1].substr(0, path_name[1].length()-4) + "_output.pcd", *select(cloud, lane_indset), false);
+  if (!exists(path_name[0] + "/" + par.save_to))
+  {
+      create_directory(path_name[0] + "/" + par.save_to);
+  }
+  string output_file_path = path_name[0] + "/" + par.save_to + "/" + path_name[1].substr(0, path_name[1].length() - 4) + "_output.pcd";
+  //if (!exists(output_file_path))
+    writer.write<pcl::PointXYZI> (output_file_path, *select(cloud, lane_indset), false);
 #endif
 #ifdef DEBUG
   custom_pcshow(select(cloud, lane_indset));
 #endif
 
 }
-
+int VERBOSE = 0;
 void
 findLanesInPointcloud(string pcdfile, string parfile){
   LanePar par(parfile);
+  if (par.verbose) {
+      VERBOSE = 1;
+  }
+  else {
+      VERBOSE = 0;
+  }
   findLanesInPointcloud(pcdfile, par);
 }
 

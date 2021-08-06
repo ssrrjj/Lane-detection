@@ -23,6 +23,10 @@ public:
     lane_width = 0.2;
     dbscan_minpts = 10;
     lanemark_minpts = 100;
+    verbose = 0;
+    save_to = "result";
+    dbscan_dis = 10.0;
+    start = 0;
   }
   LanePar(string parfile):LanePar(){
     if(!parfile.empty()) parseParfile(parfile);
@@ -32,8 +36,13 @@ public:
   double lane_width;
   int dbscan_minpts;
   int lanemark_minpts;
+  int verbose;
+  string save_to;
+  float dbscan_dis;
+  int start;
   void parseLine(string& line);
   void parseParfile(string parfile);
+  
 };
 
 

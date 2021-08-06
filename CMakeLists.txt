@@ -1,9 +1,12 @@
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
-
+set(CMAKE_CXX_STANDARD 17)
 project(planar_segmentation)
 
 find_package(PCL  REQUIRED)
 find_package( OpenCV REQUIRED )
+find_package( PythonLibs REQUIRED)
+
+include_directories(${PYTHON_INCLUDE_DIRS})
 # cmake -DCMAKE_BUILD_TYPE=Debug ../
 
 # The options need to be the same as Open3D's default
@@ -31,34 +34,34 @@ add_definitions(${PCL_DEFINITIONS})
 
 file(GLOB CPP_SOURCES src/*.cpp)
 
-add_library( lanedetection ${CPP_SOURCES})
+add_library( lanedetection ${CPP_SOURCES} "include/lanemark.h" "src/lanemark.cpp")
 #target_compile_options(lanedetection PRIVATE -O3)
 target_include_directories(lanedetection PUBLIC include/ src/)
-target_link_libraries( lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D)
+target_link_libraries( lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D ${PYTHON_LIBRARIES})
 
 ################# Compile the applications ###########################
 
 # Application lanedet
-add_executable (lanedet examples/lanedet.cpp)
+add_executable (lanedet examples/lanedet.cpp "include/lanemark.h" "src/lanemark.cpp")
 target_include_directories(lanedet PUBLIC include/)
-target_link_libraries (lanedet lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D)
+target_link_libraries (lanedet lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D ${PYTHON_LIBRARIES})
 
 # pointcloudview
-add_executable (ptcviewer examples/ptcviewer.cpp)
+add_executable (ptcviewer examples/ptcviewer.cpp "include/lanemark.h" "src/lanemark.cpp")
 target_include_directories(ptcviewer PUBLIC include/)
-target_link_libraries (ptcviewer lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} )
+target_link_libraries (ptcviewer lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS})
 
 # lane from plane
-add_executable (LFP examples/lane_from_plane.cpp)
+add_executable (LFP examples/lane_from_plane.cpp "include/lanemark.h" "src/lanemark.cpp")
 target_include_directories(LFP PUBLIC include/)
-target_link_libraries (LFP lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D)
+target_link_libraries (LFP lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D ${PYTHON_LIBRARIES})
 
 ################# Compile the tests ###################################
 
 # test plane model fitting
-add_executable (test_pcfitplane test/test_pcfitplane.cpp)
+add_executable (test_pcfitplane test/test_pcfitplane.cpp "include/lanemark.h" "src/lanemark.cpp")
 target_include_directories(test_pcfitplane PUBLIC include/)
-target_link_libraries (test_pcfitplane lanedetection ${PCL_LIBRARIES} Open3D::Open3D)
+target_link_libraries (test_pcfitplane lanedetection ${PCL_LIBRARIES} Open3D::Open3D ${PYTHON_LIBRARIES})
 
 #if(WIN32)
 get_target_property(open3d_type Open3D::Open3D TYPE)

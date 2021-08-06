@@ -15,6 +15,7 @@
 #include "dbscan.h"
 #include "utils.h"
 #include "lanepar.h"
+#include <Python.h>
 
 //#define DEBUG 1
 //#define REC_DETECT 1
@@ -39,7 +40,7 @@ findLanes(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, LanePar=LanePar());
 //std::vector<int>
 //findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, string="x");
 std::vector<int>
-findLanes_adp(pcl::PointCloud<pcl::PointXYZI>::Ptr& inCloud, Eigen::Vector4d plane_model, float grid_size);
+findLanes_adp(pcl::PointCloud<pcl::PointXYZI>::Ptr& inCloud, Eigen::Vector4d plane_model, float grid_size, LanePar par);
 
 
 std::vector<int>

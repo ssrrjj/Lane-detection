@@ -36,7 +36,10 @@
 #include "dbscan.h"
 #include "open3d/Open3D.h"
 #include <math.h>
-#define VERBOSE 0
+
+#include "lanepar.h"
+#include "lanemark.h"
+extern int VERBOSE;
 
 using namespace std;
 typedef pcl::PointCloud<pcl::PointXYZI>::Ptr CloudPtr;
@@ -82,7 +85,7 @@ OtsuFilter(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, string fieldname);
 pcl::PointCloud <pcl::PointXYZI>::Ptr
 regionGrowSeg(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<int> & idx);
 
-vector<int> findLaneByImage(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, Eigen::Vector4d plane_model, float grid_size, string save="");
+vector<int> findLaneByImage(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, Eigen::Vector4d plane_model, float grid_size, LanePar par);
 
 bool isRect(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
 
@@ -92,4 +95,7 @@ std::shared_ptr<open3d::geometry::PointCloud> pclToO3d(pcl::PointCloud<pcl::Poin
 
 cv::Mat findLaneInImage(cv::Mat uimage);
 vector<string> SplitFilename(const std::string& str);
+
+void extractLine(cv::Mat lane_mark, LanePar par);
+void extractLine(CloudPtr cloud, LanePar par);
 #endif /* INCLUDE_UTILS_H_ */

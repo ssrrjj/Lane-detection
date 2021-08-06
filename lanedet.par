@@ -1,5 +1,9 @@
 SUBREGION_WIDTH                50
-PLANE_DIST_THRESHOLD           0.5
+PLANE_DIST_THRESHOLD           0.1
 DBSCAN_MINPTS                  3
-LANEMARK_MINPTS                100
+LANEMARK_MINPTS                10
 LANE_WIDTH                     0.2
+VERBOSE 0
+SAVE_TO result_gamma_7
+DBSCAN_DIS 10
+START 3
