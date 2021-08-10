@@ -16,6 +16,7 @@
 #include "utils.h"
 #include "lanepar.h"
 #include <Python.h>
+#include "lanemark.h"
 
 //#define DEBUG 1
 //#define REC_DETECT 1
@@ -40,12 +41,18 @@ findLanes(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, LanePar=LanePar());
 //std::vector<int>
 //findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, string="x");
 std::vector<int>
-findLanes_adp(pcl::PointCloud<pcl::PointXYZI>::Ptr& inCloud, Eigen::Vector4d plane_model, float grid_size, LanePar par);
+findLanes_adp(vector<LaneMark*>& marks, pcl::PointCloud<pcl::PointXYZI>::Ptr& inCloud, Eigen::Vector4d plane_model, float grid_size, LanePar par);
 
 
 std::vector<int>
 findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, string="x", LanePar=LanePar());
 
 int evalLaneCluster(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, std::vector<int> &cluster, float laneW);
+
+
+vector<int> findLaneByImage(vector<LaneMark*>& marks, pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, Eigen::Vector4d plane_model, float grid_size, LanePar par);
+
+void extractLine(vector<LaneMark*>& grouped, cv::Mat lane_mark, LanePar par);
+void extractLine(CloudPtr cloud, LanePar par);
 
 #endif /* INCLUDE_LANEDETECTION_H_ */

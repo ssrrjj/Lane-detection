@@ -38,10 +38,11 @@
 #include <math.h>
 
 #include "lanepar.h"
-#include "lanemark.h"
 extern int VERBOSE;
 
 using namespace std;
+
+//
 typedef pcl::PointCloud<pcl::PointXYZI>::Ptr CloudPtr;
 vector<float>
 getXLimits(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
@@ -85,7 +86,7 @@ OtsuFilter(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, string fieldname);
 pcl::PointCloud <pcl::PointXYZI>::Ptr
 regionGrowSeg(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<int> & idx);
 
-vector<int> findLaneByImage(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, Eigen::Vector4d plane_model, float grid_size, LanePar par);
+
 
 bool isRect(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
 
@@ -96,6 +97,5 @@ std::shared_ptr<open3d::geometry::PointCloud> pclToO3d(pcl::PointCloud<pcl::Poin
 cv::Mat findLaneInImage(cv::Mat uimage);
 vector<string> SplitFilename(const std::string& str);
 
-void extractLine(cv::Mat lane_mark, LanePar par);
-void extractLine(CloudPtr cloud, LanePar par);
+cv::Mat toImage(CloudPtr cloud, Eigen::Vector4d plane_model, float grid_size, vector<vector<int>>& pixel2cloud);
 #endif /* INCLUDE_UTILS_H_ */

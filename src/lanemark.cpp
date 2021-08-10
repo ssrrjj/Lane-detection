@@ -10,8 +10,6 @@ void link(Element* x, Element* y) {
 		y->p = x;
 	else
 		x->p = y;
-	if (x->rank == y->rank)
-		y->rank += 1;
 	return;
 }
 
@@ -107,23 +105,20 @@ bool is_coline(LaneMark* x, LaneMark* y, float th) {
 	cv::Vec4f& line2 = lm2->min_line;
 	float midx = (lm1->maxx + lm2->minx) / 2;
 	float midy = (lm1->maxy + lm2->miny) / 2;
-	
+	cout << "get dis" << endl;
 	float d1 = disFromPointToLine(midx, midy, line1);
 	float d2 = disFromPointToLine(midx, midy, line2);
 
-	//cout << d1 + d2 << endl;
 	
 	if (d1 + d2 < th) {
 		cout << lm1->idx << " " << lm2->idx << endl;
-
-		//custom_pcshow(lm1->points);
-		//custom_pcshow(lm2->points);
-		int w = max(1+lm1->maxx, 1+lm2->maxx);
+		cout << d1 + d2 << endl;
+		int w = max(200 + lm1->maxx, 200 + lm2->maxx);
 		vector<float> ylimit1 = getYLimits(lm1->points);
 		vector<float> ylimit2 = getYLimits(lm2->points);
-		int h = (int)max(ylimit1[1], ylimit2[1]) + 1;
-		cv::Mat visual = cv::Mat::zeros(h, w , CV_8UC1);
+		int h = (int)max(ylimit1[1], ylimit2[1]) + 200;
 		cout << h << " " << w << endl;
+		cv::Mat visual = cv::Mat::zeros(h, w, CV_8UC1);
 		for (auto p : lm1->points->points) {
 			int pi = (int)p.y;
 			int pj = (int)p.x;
@@ -138,11 +133,14 @@ bool is_coline(LaneMark* x, LaneMark* y, float th) {
 			assert(pj < w);
 			visual.at<uchar>(pi, pj) = 255;
 		}
-		/*cv::line(visual, cv::Point(0, -line1[2] * line1[1] / line1[0] + line1[3]), cv::Point(midx, line1[1] / line1[0] * (midx - line1[2]) + line1[3]), 100, 10);
+		cv::line(visual, cv::Point(0, -line1[2] * line1[1] / line1[0] + line1[3]), cv::Point(midx, line1[1] / line1[0] * (midx - line1[2]) + line1[3]), 100, 2);
 
-		cv::line(visual, cv::Point(0, -line2[2] * line2[1] / line2[0] + line2[3]), cv::Point(midx, line2[1] / line2[0] * (midx - line2[2]) + line2[3]), 100, 10);*/
+		cv::line(visual, cv::Point(0, -line2[2] * line2[1] / line2[0] + line2[3]), cv::Point(midx, line2[1] / line2[0] * (midx - line2[2]) + line2[3]), 100, 2);
 		cv::imshow("two lines", visual);
 		cv::waitKey(0);
+		//custom_pcshow(lm1->points);
+		//custom_pcshow(lm2->points);
+		
 		return true;
 	}
 	return false;
@@ -179,12 +177,78 @@ bool is_coline(LaneMark3D* x, LaneMark3D* y, pcl::PointCloud<pcl::PointXYZI>::Pt
 	float d2 = disFromPointToLine(midx, midy, midz, line2);
 
 	//cout << d1 + d2 << endl;
-
+	th = 0.3;
 	if (d1 + d2 < th) {
 		cout << d1 + d2 << endl;
-		//custom_pcshow(cloud, lm1->points, lm2->points, line1, line2);
+		custom_pcshow(cloud, lm1->points, lm2->points, line1, line2);
 		return true;
 	}
 	return false;
 
+}
+
+vector<LaneMark*>  group(vector<LaneMark*>& lanemarks) {
+	vector<LaneMark*> ret;
+	for (int i = 0; i < lanemarks.size(); i++) {
+		for (int j = i + 1; j < lanemarks.size(); j++) {
+			if (findp(lanemarks[i]) == findp(lanemarks[j]))
+				continue;
+			if (is_coline(lanemarks[i], lanemarks[j])) {
+
+				join(lanemarks[i], lanemarks[j]);
+				cout << "join" << i << " " << j << " " << findp(lanemarks[i])->idx << " " << findp(lanemarks[j])->idx << endl;
+			}
+		}
+	}
+	cout << "group coline marks" << endl;
+	for (LaneMark* lanemark : lanemarks) {
+		LaneMark* p = (LaneMark*)findp(lanemark);
+		if (p == lanemark) {
+			ret.push_back(p);
+		}
+		else {
+			if (lanemark->minx < p->minx) {
+				p->minx = lanemark->minx;
+				p->miny = lanemark->miny;
+				p->min_line = lanemark->min_line;
+				*p->points += *lanemark->points;
+				
+			}
+			delete lanemark;
+		}
+	}
+	return ret;
+}
+
+void
+custom_pcshow(vector<LaneMark*> & marks) {
+    pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
+    viewer->setBackgroundColor(0, 0, 0);
+    vector<cv::Vec3b> colors;
+    for (int i = 0; i < marks.size(); i++)
+    {
+		cout << i << endl;
+        int b = cv::theRNG().uniform(0, 256);
+        int g = cv::theRNG().uniform(0, 256);
+        int r = cv::theRNG().uniform(0, 256);
+        colors.push_back(cv::Vec3b((uchar)b, (uchar)g, (uchar)r));
+    }
+    int k = 0;
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr whole(new pcl::PointCloud<pcl::PointXYZRGB>);
+    for (auto mark : marks) {
+		cout << k << endl;
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb(new pcl::PointCloud<pcl::PointXYZRGB>);
+        toRGB(mark->points, rgb, colors[k]);
+		//cout << "get rgb" << endl;
+		*whole += *rgb;
+		k += 1;
+    }
+	cout << whole->points.size() << endl;
+	cout << whole->height * whole->width << endl;
+	viewer->addPointCloud<pcl::PointXYZRGB>(whole, "whole");
+	while (!viewer->wasStopped())
+	{
+		viewer->spinOnce(100);
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
 }

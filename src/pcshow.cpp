@@ -8,7 +8,6 @@
 #include "pcshow.h"
 #include <thread>
 #include <chrono>
-#include "utils.h"
 
 
 int user_data;
@@ -73,8 +72,10 @@ custom_pcshow(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud)
 }
 
 void toRGB(pcl::PointCloud<pcl::PointXYZI>::Ptr gray, pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb, cv::Vec3b color) {
+
     for (int i = 0; i < gray->points.size(); i++) {
         pcl::PointXYZI tmp = gray->points[i];
+        //cout << "get grey point " << i << "/"<< gray->points.size()<<endl;
         rgb->points.push_back(pcl::PointXYZRGB(tmp.x, tmp.y, tmp.z, color[0], color[1], color[2]));
     }
     rgb->height = 1;

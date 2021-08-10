@@ -8,28 +8,29 @@ cv::Vec6f getLine3D(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, vector<int>& idx
 class Element {
 public: 
 	int idx;
-	int rank;
+	double rank;
 	Element* p;
 };
 class LaneMark: public Element  {
 public:
-
+	static int global_idx;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr points;
 	pcl::KdTreeFLANN<pcl::PointXYZI> kdtree;
-	int max_i;
-	int min_i;
+	
 	float minx, miny;
 	float maxx, maxy;
 	
 	cv::Vec4f min_line, max_line;
-	LaneMark(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, int k, float search_radius = 15) {
+	LaneMark(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, int k, float search_radius = 80) {
 		points = cloud;
-		idx = k;
+		idx = global_idx;
+		global_idx += 1;
 		p = this;
-		
+		int max_i = 0;
+		int min_i = 0;
 		maxx = cloud->points[0].x;
 		minx = cloud->points[0].x;
-		
+		rank = maxx;
 		for (int i = 0; i < cloud->points.size(); i++) {
 			if (cloud->points[i].x < minx) {
 				minx = cloud->points[i].x;
@@ -92,6 +93,7 @@ public:
 		//cout << "constructor ";
 		points = cloud;
 		idx = k;
+		
 		p = this;
 
 		float maxx = cloud->points[0].x;
@@ -151,6 +153,7 @@ void join(Element* x, Element* y);
 bool is_coline(LaneMark* x, LaneMark* y, float th = 10.0);
 
 bool is_coline(LaneMark3D* x, LaneMark3D* y, pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float th = 0.75);
-
+vector<LaneMark*>  group(vector<LaneMark*>& lanemarks);
 // void group(vector<LaneMark*>& input, vector<LaneMark*>& output);
+void custom_pcshow(vector<LaneMark*>& marks);
 #endif

@@ -8,6 +8,8 @@
 #include "lanedetection.h"
 //#include "Python.h"
 #include <stdio.h>
+#include <lanemark.h>
+
 int main(int argc, char* argv[])
 {
     //FILE* fp;
@@ -24,6 +26,7 @@ int main(int argc, char* argv[])
     //    exit(120);
     //}
     //PyMem_RawFree(program);
+    
   string pcdfile;
   string parfile;
   if(argc>=2){
