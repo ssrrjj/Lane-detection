@@ -184,7 +184,7 @@ pcfitplaneByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, std::vector<int>& i
  // }
 
   auto cloud_ptr = pclToO3d(cloud);
-  if (VERBOSE) {
+  if (VERBOSE == 1) {
       cout << "fitplane input " << endl;
       custom_pcshow(cloud);
   }
@@ -192,7 +192,7 @@ pcfitplaneByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, std::vector<int>& i
   plane = cloud_ptr->SegmentPlane(distThreshold, 3, 1000);
   plane_model = get<0>(plane);
   std::vector<size_t> inliers = get<1>(plane);
-  if (VERBOSE) {
+  if (VERBOSE == 1) {
       cout << "fitplane output" << endl;
       auto inlier_cloud = std::make_shared<open3d::geometry::PointCloud>();
       inlier_cloud = cloud_ptr->SelectByIndex(inliers, FALSE);

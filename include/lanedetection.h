@@ -52,7 +52,7 @@ int evalLaneCluster(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, std::vector<int
 
 vector<int> findLaneByImage(vector<LaneMark*>& marks, pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, Eigen::Vector4d plane_model, float grid_size, LanePar par);
 
-void extractLine(vector<LaneMark*>& grouped, cv::Mat lane_mark, LanePar par);
+void extractLine(vector<LaneMark*>& grouped, cv::Mat lane_mark, vector<vector<int>>& pixel2cloud, pcl::PointCloud<pcl::PointXYZI>::Ptr whole, LanePar par);
 void extractLine(CloudPtr cloud, LanePar par);
-
+cv::Mat removeFalsePostive(cv::Mat lane_mark, LanePar par);
 #endif /* INCLUDE_LANEDETECTION_H_ */

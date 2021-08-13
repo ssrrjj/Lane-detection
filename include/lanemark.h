@@ -1,7 +1,7 @@
 #ifndef INCLUDE_LANEMARK_H_
 #define INCLUDE_LANEMARK_H_
 #include "utils.h"
-
+#include "polyline.h"
 cv::Vec4f getLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, vector<int>& idx);
 cv::Vec6f getLine3D(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, vector<int>& idx);
 
@@ -19,9 +19,10 @@ public:
 	
 	float minx, miny;
 	float maxx, maxy;
-	
+	pcl::PointCloud<pcl::PointXYZI>::Ptr points3D;
 	cv::Vec4f min_line, max_line;
-	LaneMark(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, int k, float search_radius = 80) {
+	vector<PolyLine> polyline;
+	LaneMark(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, vector<vector<int>>& pixel2cloud, pcl::PointCloud<pcl::PointXYZI>::Ptr whole, int w, float search_radius = 80) {
 		points = cloud;
 		idx = global_idx;
 		global_idx += 1;
@@ -54,7 +55,19 @@ public:
 		min_line = getLine(cloud, min_neighbor);
 		max_line = getLine(cloud, max_neighbor);
 		
-
+		points3D = make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+		
+		for (auto& point : cloud->points) {
+			int img_j = (int)point.x;
+			int img_i = (int)point.y;
+			//cout << img_i << "," << img_j << endl;
+			for (int idx3D : pixel2cloud[img_i * w + img_j]) {
+				points3D->points.push_back(whole->points[idx3D]);
+			}
+		}
+		points3D->height = 1;
+		points3D->width = points3D->points.size();
+		polyline.push_back(PolyLine(points3D));
 		/*int h = (int)max(maxy, miny) + 20;
 		cv::Mat visual = cv::Mat::zeros(h, (int)maxx + 20, CV_8UC1);
 		cout << h << " " << (int)maxx + 20 << endl;
@@ -89,6 +102,8 @@ public:
 	cv::Point3f endpoint1;
 
 	cv::Vec6f line0, line1;
+	
+
 	LaneMark3D(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, int k) {
 		//cout << "constructor ";
 		points = cloud;
@@ -150,10 +165,11 @@ public:
 void link(Element* x, Element* y);
 Element* findp(Element* x);
 void join(Element* x, Element* y);
-bool is_coline(LaneMark* x, LaneMark* y, float th = 10.0);
+bool is_coline(LaneMark* x, LaneMark* y, float th = 10.0, int v = 0);
 
 bool is_coline(LaneMark3D* x, LaneMark3D* y, pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float th = 0.75);
 vector<LaneMark*>  group(vector<LaneMark*>& lanemarks);
 // void group(vector<LaneMark*>& input, vector<LaneMark*>& output);
 void custom_pcshow(vector<LaneMark*>& marks);
+vector<LaneMark*>  group2(vector<LaneMark*>& lanemarks);
 #endif

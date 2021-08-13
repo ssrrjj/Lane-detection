@@ -362,28 +362,28 @@ regionGrowSeg(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<int> & idx) {
 Mat toImage(CloudPtr cloud, Eigen::Vector4d plane_model, float grid_size, vector<vector<int>>& pixel2cloud) {
     double a, b, c, d;
     int n = cloud->points.size();
-    if (VERBOSE) {
+    if (VERBOSE == 1) {
         cout << "toImage input\n" << endl;
         custom_pcshow(cloud);
     }
-    a = plane_model[0];
-    b = plane_model[1];
-    c = plane_model[2];
-    d = plane_model[3];
+    //a = plane_model[0];
+    //b = plane_model[1];
+    //c = plane_model[2];
+    //d = plane_model[3];
 
-    Eigen::Vector4d ex(c, 0, -a, 0), ey(-a * b, a * a + c * c, -b * c, 0), ez(a, b, c, 0);
-    ex.normalize(); ey.normalize(); ez.normalize();
-    Eigen::Matrix4d T;
-    T.row(0) = ex;
-    T.row(1) = ey;
-    T.row(2) = ez;
+    //Eigen::Vector4d ex(c, 0, -a, 0), ey(-a * b, a * a + c * c, -b * c, 0), ez(a, b, c, 0);
+    //ex.normalize(); ey.normalize(); ez.normalize();
+    //Eigen::Matrix4d T;
+    //T.row(0) = ex;
+    //T.row(1) = ey;
+    //T.row(2) = ez;
 
-    T.row(3) = Eigen::Vector4d(0., 0., 0., 0.);
+    //T.row(3) = Eigen::Vector4d(0., 0., 0., 0.);
 
-    T.col(3) = Eigen::Vector4d(0., 0., d / c, 1.);
+    //T.col(3) = Eigen::Vector4d(0., 0., d / c, 1.);
     pcl::PointCloud<pcl::PointXYZI>::Ptr transformed_cloud(new pcl::PointCloud<pcl::PointXYZI>);
 
-    pcl::transformPointCloud(*cloud, *transformed_cloud, T);
+    //pcl::transformPointCloud(*cloud, *transformed_cloud, T);
     transformed_cloud = cloud;
     vector<float> xlimit = getXLimits(transformed_cloud);
     vector<float> ylimit = getYLimits(transformed_cloud);
@@ -425,6 +425,10 @@ Mat toImage(CloudPtr cloud, Eigen::Vector4d plane_model, float grid_size, vector
             float cy = ymin + (i + 0.5) * grid_size;
             float cz = 0;
             double pixel_value = 0;
+            int search_d = 1;
+            if (pixels[i * w + j].size() < 10)
+                search_d = 10;
+
             for (const auto& point : pixels[i * w + j]) {
                 Eigen::Vector3d d((double)point.x - (double)cx,
                     (double)(point.y) - (double)(cy), (double)(point.z));
@@ -451,7 +455,7 @@ Mat toImage(CloudPtr cloud, Eigen::Vector4d plane_model, float grid_size, vector
             uimage.at<uchar>(i, j) = (uchar)pixel_int;
         }
     }
-    if (VERBOSE) {
+    if (VERBOSE == 1) {
         cout << "getimage" << endl;
         imwrite("plane_image.png", uimage);
         imshow("image", uimage);
@@ -460,7 +464,7 @@ Mat toImage(CloudPtr cloud, Eigen::Vector4d plane_model, float grid_size, vector
     return uimage;
 }
 
-vector<vector<int>> ImageDbscan(Mat& image, vector<int> &cloud2pixel, float eps = 3.0, int min_pts = 20 ) {
+vector<vector<int>> ImageDbscan(Mat& image, vector<int> &cloud2pixel, float eps, int min_pts ) {
     // create a point cloud
     int h = image.rows;
     int w = image.cols;
@@ -551,7 +555,7 @@ Mat findLaneInImage(Mat uimage) {
     
     //cout << "save road image" << endl;
     cv::imwrite("road_image_gamma.png", uimage);
-    if (VERBOSE) {
+    if (VERBOSE == 1) {
         cv::imshow("road_image_gamma", uimage);
         waitKey(0);
     }
@@ -559,7 +563,7 @@ Mat findLaneInImage(Mat uimage) {
     Mat for_inpaint = uimage.clone();
     cv::inpaint(for_inpaint, mask_inv, uimage, 11, cv::INPAINT_TELEA);
 
-    if (VERBOSE) {
+    if (VERBOSE == 1) {
         imshow("inpainted road image", uimage);
         waitKey(0);
     }
@@ -585,7 +589,7 @@ Mat findLaneInImage(Mat uimage) {
 
     //cout << "save lane image" << endl;
     cv::imwrite("lane_image.png", lanemark);
-    if (VERBOSE) {
+    if (VERBOSE == 1) {
         cv::imshow("lane mark", lanemark);
         waitKey(0);
     }
@@ -596,23 +600,7 @@ Mat findLaneInImage(Mat uimage) {
 
 
 
-Mat removeFalsePostive(Mat lane_mark, LanePar par) {
-    vector<int> cloud2pixel;
-    vector<vector<int>> clusters= ImageDbscan(lane_mark, cloud2pixel, par.dbscan_dis, 2);
-    int h = lane_mark.rows, w = lane_mark.cols;
-    Mat ret = Mat::zeros(h, w, CV_8UC1);
-    for (auto& cluster : clusters) {
-        if (cluster.size() > par.lanemark_minpts) {
-            for (int point : cluster) {
-                int pixel_idx = cloud2pixel[point];
-                int i = pixel_idx / w;
-                int j = pixel_idx % w;
-                ret.at<uchar>(i, j) = 255;
-            }
-        }
-    }
-    return ret;
-}
+
 
 
 

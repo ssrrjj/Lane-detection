@@ -20,9 +20,13 @@ void
 custom_pcshow(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud);
 void custom_pcshow(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);
 
-
 void
 custom_pcshow(pcl::PointCloud<pcl::PointXYZI>::Ptr whole, pcl::PointCloud<pcl::PointXYZI>::Ptr cloud1, pcl::PointCloud<pcl::PointXYZI>::Ptr cloud2, cv::Vec6f line1, cv::Vec6f line2);
+
+void
+custom_pcshow(pcl::PointCloud<pcl::PointXYZI>::Ptr c1, pcl::PointCloud<pcl::PointXYZI>::Ptr c2);
 void toRGB(pcl::PointCloud<pcl::PointXYZI>::Ptr gray, pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb, cv::Vec3b color);
+void
+custom_pcshow(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud1, pcl::PointCloud<pcl::PointXYZI>::Ptr cloud2, pcl::PointXYZ l1p1, pcl::PointXYZ l1p2, pcl::PointXYZ l2p1, pcl::PointXYZ l2p2);
 //void custom_pcshow(vector<LaneMark*>& marks);
 #endif /* INCLUDE_PCSHOW_H_ */

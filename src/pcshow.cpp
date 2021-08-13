@@ -96,7 +96,8 @@ custom_pcshow(pcl::PointCloud<pcl::PointXYZI>::Ptr whole, pcl::PointCloud<pcl::P
 
     toRGB(cloud1, rgb1, cv::Vec3b(255, 0, 0));
     toRGB(cloud2, rgb2, cv::Vec3b(0, 255, 0));
-    viewer->addPointCloud<pcl::PointXYZI>(whole, "whole");
+    if (whole)
+        viewer->addPointCloud<pcl::PointXYZI>(whole, "whole");
     viewer->addPointCloud<pcl::PointXYZRGB>(rgb1, "cloud1");
     viewer->addPointCloud<pcl::PointXYZRGB>(rgb2, "cloud2");
     //use the following functions to get access to the underlying more advanced/powerful
@@ -138,3 +139,57 @@ custom_pcshow(pcl::PointCloud<pcl::PointXYZI>::Ptr whole, pcl::PointCloud<pcl::P
     }
 }
 
+
+void
+custom_pcshow( pcl::PointCloud<pcl::PointXYZI>::Ptr cloud1, pcl::PointCloud<pcl::PointXYZI>::Ptr cloud2, pcl::PointXYZ l1p1, pcl::PointXYZ l1p2, pcl::PointXYZ l2p1, pcl::PointXYZ l2p2)
+{
+    pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
+    viewer->setBackgroundColor(0, 0, 0);
+    //blocks until the cloud is actually rendered
+    //viewer.showCloud(cloud);
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb1(new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb2(new pcl::PointCloud<pcl::PointXYZRGB>);
+
+    toRGB(cloud1, rgb1, cv::Vec3b(255, 0, 0));
+    toRGB(cloud2, rgb2, cv::Vec3b(0, 255, 0));
+    viewer->addPointCloud<pcl::PointXYZRGB>(rgb1, "cloud1");
+    viewer->addPointCloud<pcl::PointXYZRGB>(rgb2, "cloud2");
+    //use the following functions to get access to the underlying more advanced/powerful
+    //PCLVisualizer
+
+    //This will only get called once
+    // viewer.runOnVisualizationThreadOnce (viewerOneOff);
+
+    //This will get called once per visualization iteration
+    //viewer.runOnVisualizationThread(viewerPsycho);
+
+    pcl::ModelCoefficients line_coeff1;
+
+
+    viewer->addLine(l1p1,l1p2, 255, 255, 0, "line1");
+    viewer->addLine(l2p1,l2p2, 0, 255, 255, "line2");
+
+    while (!viewer->wasStopped())
+    {
+        viewer->spinOnce(100);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+}
+
+void
+custom_pcshow(pcl::PointCloud<pcl::PointXYZI>::Ptr c1, pcl::PointCloud<pcl::PointXYZI>::Ptr c2) {
+    pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
+    viewer->setBackgroundColor(0, 0, 0);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb1(new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb2(new pcl::PointCloud<pcl::PointXYZRGB>);
+    toRGB(c1, rgb1, cv::Vec3b(255, 0, 0));
+    toRGB(c2, rgb2, cv::Vec3b(0, 255, 0));
+    viewer->addPointCloud<pcl::PointXYZRGB>(rgb1, "cloud1");
+    viewer->addPointCloud<pcl::PointXYZRGB>(rgb2, "cloud2");
+    while (!viewer->wasStopped())
+    {
+        viewer->spinOnce(100);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+}

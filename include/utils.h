@@ -98,4 +98,5 @@ cv::Mat findLaneInImage(cv::Mat uimage);
 vector<string> SplitFilename(const std::string& str);
 
 cv::Mat toImage(CloudPtr cloud, Eigen::Vector4d plane_model, float grid_size, vector<vector<int>>& pixel2cloud);
+vector<vector<int>> ImageDbscan(cv::Mat& image, vector<int>& cloud2pixel, float eps = 3.0, int min_pts = 20);
 #endif /* INCLUDE_UTILS_H_ */
