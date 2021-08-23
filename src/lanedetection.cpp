@@ -14,6 +14,7 @@
 #include "lanemark.h"
 #include <iostream>
 #include <fstream>
+#include "lasStream.h"
 
 using namespace std;
 using namespace std::filesystem;
@@ -380,6 +381,9 @@ findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, s
   // pcl::PointCloud<pcl::PointXYZI>::Ptr planeCloud = pcfitplane(ptcROI, indsetROI, distThreshold);
 
   Eigen::Vector4d plane_model;
+  if (ptcROI->points.size() < 100) {
+      return indsetROI;
+  }
   pcfitplaneByROI(ptcROI, indsetROI, plane_model, distThreshold, fieldname);
   
 
@@ -482,11 +486,26 @@ findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, s
 void
 findLanesInPointcloud(string pcdfile, LanePar& par){
   std::cout<<"Running lane detection for "+pcdfile<<" ......"<<std::endl;
+  //check if it is done before
+  vector<string> path_name = SplitFilename(pcdfile);
+  if (!exists(path_name[0] + "/" + par.save_to))
+  {
+      create_directory(path_name[0] + "/" + par.save_to);
+  }
+  string output_file_path = path_name[0] + "/" + par.save_to + "/" + path_name[1].substr(0, path_name[1].length() - 4) + "_output";
+  if (exists(output_file_path + ".pcd")) {
+      cout << "Done before." << endl;
+      return;
+  }
+
   // Read in point cloud to apply lane detection
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::io::loadPCDFile (pcdfile, *cloud);
+  //pcl::io::loadPCDFile(pcdfile, *cloud);
+  if (pcdfile[pcdfile.length()-1] == 'd')
+      pcl::io::loadPCDFile(pcdfile, *cloud);
   // pcl::io::loadPCDFile ("point_cloud_00007.pcd", *cloud);
-
+  else
+      readlas(pcdfile, cloud);
   int numPts = cloud->points.size();
   std::vector<int> lanepts(numPts, 0);
 
@@ -572,14 +591,10 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
 #ifdef REC_DETECT
   writer.write<pcl::PointXYZI> (pcdfile.substr(0, pcdfile.find(".pcd"))+"_rect_output.pcd", *select(cloud, lane_indset), false);
 #else
-  vector<string> path_name = SplitFilename(pcdfile);
-  if (!exists(path_name[0] + "/" + par.save_to))
-  {
-      create_directory(path_name[0] + "/" + par.save_to);
-  }
-  string output_file_path = path_name[0] + "/" + par.save_to + "/" + path_name[1].substr(0, path_name[1].length() - 4) + "_output";
+  
   //if (!exists(output_file_path))
     writer.write<pcl::PointXYZI> (output_file_path+".pcd", *select(cloud, lane_indset), false);
+    cout << "write rgb" << endl;
     writer.write<pcl::PointXYZRGB>(output_file_path + "_rgb.pcd", *final_result, false);
 
     ofstream myfile(output_file_path + ".txt");
@@ -588,8 +603,14 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
         for (auto& polyline : all_marks[i]->polyline) {
             string line = to_string(i) + " ";
             for (auto& point : polyline.points->points) {
-                line += to_string(point.x) + ",";
-                line += to_string(point.y) + ",";
+                if (fieldname == "x") {
+                    line += to_string(point.x) + ",";
+                    line += to_string(point.y) + ",";
+                }
+                else {
+                    line += to_string(point.y) + ",";
+                    line += to_string(point.x) + ",";
+                }
                 line += to_string(point.z) + " ";
             }
             line += "\n";
