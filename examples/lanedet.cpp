@@ -39,7 +39,8 @@ int main(int argc, char* argv[])
     std::cout<<"Exit without lane detection. \n"<<std::endl;
     return 1;
   }
-  
+  extern int canyoufind;
+  cout << canyoufind << endl;
   findLanesInPointcloud(pcdfile, parfile); // findLanesInPointcloud(pcdfile, par);
   return (0);
 }

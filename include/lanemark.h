@@ -2,6 +2,7 @@
 #define INCLUDE_LANEMARK_H_
 #include "utils.h"
 #include "polyline.h"
+#include <pcl/filters/voxel_grid.h>
 cv::Vec4f getLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, vector<int>& idx);
 cv::Vec6f getLine3D(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, vector<int>& idx);
 
@@ -21,7 +22,6 @@ public:
 	float maxx, maxy;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr points3D;
 	cv::Vec4f min_line, max_line;
-	vector<PolyLine> polyline;
 	LaneMark(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, vector<vector<int>>& pixel2cloud, pcl::PointCloud<pcl::PointXYZI>::Ptr whole, int w, float search_radius = 80) {
 		points = cloud;
 		idx = global_idx;
@@ -47,13 +47,22 @@ public:
 		
 
 
-		kdtree.setInputCloud(cloud);
+		
 		vector<int>min_neighbor, max_neighbor;
 		vector<float>max_dis, min_dis;
+		
+		pcl::VoxelGrid<pcl::PointXYZI> sor;
+		pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZI>);
+		sor.setInputCloud(cloud);
+		sor.setLeafSize(0.1f, 0.1f, 0.1f);
+		sor.filter(*cloud_filtered);
+		kdtree.setInputCloud(cloud_filtered);
 		kdtree.radiusSearch(cloud->points[min_i], search_radius, min_neighbor, min_dis);
 		kdtree.radiusSearch(cloud->points[max_i], search_radius, max_neighbor, max_dis);
-		min_line = getLine(cloud, min_neighbor);
-		max_line = getLine(cloud, max_neighbor);
+
+
+		min_line = getLine(cloud_filtered, min_neighbor);
+		max_line = getLine(cloud_filtered, max_neighbor);
 		
 		points3D = make_shared<pcl::PointCloud<pcl::PointXYZI>>();
 		
@@ -67,7 +76,6 @@ public:
 		}
 		points3D->height = 1;
 		points3D->width = points3D->points.size();
-		polyline.push_back(PolyLine(points3D));
 		/*int h = (int)max(maxy, miny) + 20;
 		cv::Mat visual = cv::Mat::zeros(h, (int)maxx + 20, CV_8UC1);
 		cout << h << " " << (int)maxx + 20 << endl;
@@ -165,7 +173,7 @@ public:
 void link(Element* x, Element* y);
 Element* findp(Element* x);
 void join(Element* x, Element* y);
-bool is_coline(LaneMark* x, LaneMark* y, float th = 10.0, int v = 0);
+bool is_coline(LaneMark* x, LaneMark* y, float th = 10.0, int v = 0, float*score = nullptr);
 
 bool is_coline(LaneMark3D* x, LaneMark3D* y, pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float th = 0.75);
 vector<LaneMark*>  group(vector<LaneMark*>& lanemarks);

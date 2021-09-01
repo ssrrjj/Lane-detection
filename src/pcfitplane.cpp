@@ -15,6 +15,9 @@ void plane_filter(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, vector<int> & inli
       inlier.push_back(i);
   }
 }
+
+
+
 pcl::PointCloud<pcl::PointXYZI>::Ptr plane_points(vector<float> xlimit, vector<float>ylimit, vector<float> param) {
   float a,b,c,d;
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);

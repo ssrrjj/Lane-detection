@@ -19,6 +19,24 @@
 using namespace std;
 using namespace std::filesystem;
 using namespace cv;
+
+void showpolyline(CloudPtr cloud, vector<pcl::PointXYZ> points) {
+    pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
+    viewer->setBackgroundColor(0, 0, 0);
+    //viewer->addPointCloud<pcl::PointXYZI>(cloud, "cloud");
+    pcl::PointCloud<pcl::PointXYZ>::Ptr tmp(new pcl::PointCloud<pcl::PointXYZ>);
+    for (auto p : cloud->points)
+        tmp->points.push_back(pcl::PointXYZ(p.x, p.y, p.z));
+    viewer->addPointCloud<pcl::PointXYZ>(tmp, "cloud");
+    for (int point_idx = 0; point_idx < points.size() - 1; point_idx++) {
+        viewer->addLine(points[point_idx], points[point_idx + 1], 255, 0, 0, "line" + to_string(point_idx));
+    }
+    while (!viewer->wasStopped())
+    {
+        viewer->spinOnce(100);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+}
 vector<LaneMark*>all_marks;
 int
 evalLaneCluster(pcl::PointCloud<pcl::PointXYZI>::Ptr& fullcloud, std::vector<int> &cluster, float laneW)
@@ -438,23 +456,34 @@ findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, s
   vector<LaneMark*> all_marks_tmp(all_marks);
   all_marks.clear();
 
-  for (auto mark : all_marks_tmp) {
-      for (auto new_mark : marks) {
-          if (added.find(new_mark->idx) == added.end()) {
-              if (is_coline(mark, new_mark, 15, 1)) {
-                  //mark->maxx = new_mark->maxx;
-                  //mark->maxy = new_mark->maxy;
-                  //mark->max_line = new_mark->max_line;
-                  //added.insert(new_mark->idx);
-                  //*mark->points3D += *new_mark->points3D;
-                  //*mark->points += *new_mark->points;
-                  //mark->polyline.insert(mark->polyline.begin(), new_mark->polyline.begin(), new_mark->polyline.end());
-                  join(mark, new_mark);
-                  added.insert(new_mark->idx);
+  //for (auto mark : all_marks_tmp) {
+  //    for (auto new_mark : marks) {
+  //        if (added.find(new_mark->idx) == added.end()) {
+  //            if (is_coline(mark, new_mark, 15, 1)) {
+  //                join(mark, new_mark);
+  //                added.insert(new_mark->idx);
+  //            }
+  //        }
+  //    }
+  //}
+
+  for (auto new_mark : marks) {
+      LaneMark* best_match = nullptr;
+      float score;
+      float best_score = 100000;
+      for (auto mark : all_marks_tmp) {
+          if (is_coline(mark, new_mark, 15, 1, &score)) {
+              if (score < best_score) {
+                  best_score = score;
+                  best_match = mark;
               }
           }
       }
+      
+      if (best_match != nullptr)
+          join(new_mark, best_match);
   }
+
   for (auto new_mark : marks) {
       all_marks_tmp.push_back(new_mark);
       //if (added.find(new_mark->idx) == added.end()) {
@@ -534,8 +563,14 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
 
   vector<float> roi(2,0.0);
   assert(par.start <= N);
-
+  pcl::PCDWriter writer;
   for(int i=(N+par.start)%N; i<=N; i++){
+      //if (i == 24) {
+      //    VERBOSE = 2;
+      //    for (int fka = 0; fka < all_marks.size(); fka++) {
+      //        writer.write<pcl::PointXYZI>("lanemark_" + to_string(fka) + ".pcd", *all_marks[fka]->points3D, false);
+      //    }
+      //}
       roi[0] = range[0]+subregion_width*i;
       roi[1] = range[0]+subregion_width*(i+1);
       if(i==N) roi[1] = range[1];
@@ -547,7 +582,7 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
       // #else
       //   subwriter.write<pcl::PointXYZI> (pcdfile.substr(0, pcdfile.find(".pcd"))+"_output"+std::to_string(i)+".pcd", *lane_ptc, false);
       // #endif
-      //custom_pcshow(lane_ptc);
+      // custom_pcshow(lane_ptc);
       for(const auto & p: indset)
         lanepts[p]=1;
       
@@ -586,7 +621,7 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
   std::cout<<"Lane detection completed!"<<std::endl;
 
   // Write the extracted plane to disk
-  pcl::PCDWriter writer;
+  
   
 #ifdef REC_DETECT
   writer.write<pcl::PointXYZI> (pcdfile.substr(0, pcdfile.find(".pcd"))+"_rect_output.pcd", *select(cloud, lane_indset), false);
@@ -599,25 +634,33 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
 
     ofstream myfile(output_file_path + ".txt");
     //write polyline
+    
+
     for (int i = 0; i < all_marks.size(); i++) {
-        for (auto& polyline : all_marks[i]->polyline) {
-            string line = to_string(i) + " ";
-            for (auto& point : polyline.points->points) {
-                if (fieldname == "x") {
-                    line += to_string(point.x) + ",";
-                    line += to_string(point.y) + ",";
-                }
-                else {
-                    line += to_string(point.y) + ",";
-                    line += to_string(point.x) + ",";
-                }
-                line += to_string(point.z) + " ";
+        //writer.write<pcl::PointXYZI>("lanemark_" + to_string(i) + ".pcd", *all_marks[i]->points3D, false);
+        PolyLine polyline(all_marks[i]->points3D);
+        if (polyline.points.size() == 0)
+            continue;
+        
+        //showpolyline(all_marks[i]->points3D, polyline.points);
+        string line = to_string(i) + " ";
+        for (auto & point : polyline.points) {
+            if (fieldname == "x") {
+                line += to_string(point.x) + ",";
+                line += to_string(point.y) + ",";
             }
-            line += "\n";
-            myfile << line;
+            else {
+                line += to_string(point.y) + ",";
+                line += to_string(point.x) + ",";
+            }
+            line += to_string(point.z) + " ";
+            
         }
+        line += "\n";
+        myfile << line;
   }
     myfile.close();
+    
 #endif
 #ifdef DEBUG
   custom_pcshow(select(cloud, lane_indset));

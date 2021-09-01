@@ -3,7 +3,7 @@
 #include "utils.h"
 class PolyLine {
 public:
-	pcl::PointCloud<pcl::PointXYZ>::Ptr points;
+	vector<pcl::PointXYZ>points;
 	PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud);
 };
 

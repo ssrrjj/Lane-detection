@@ -2,7 +2,6 @@
 #include <cmath>
 #include <pcl/sample_consensus/ransac.h>
 #include <pcl/sample_consensus/sac_model_line.h>
-
 void link(Element* x, Element* y) {
 	if (x == y)
 		return;
@@ -27,6 +26,7 @@ void join(Element* x, Element* y) {
 
 cv::Vec4f getLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, vector<int>& idx) {
 	vector<cv::Point2f> line_pts;
+	
 	for (int i : idx) {
 		cv::Point2f tmp;
 		tmp.x = cloud->points[i].x;
@@ -94,10 +94,11 @@ float gety(cv::Vec4f& line, float x) {
 	return line[1] / line[0] * (x - line[2]) + line[3];
 }
 
-bool is_coline(LaneMark* x, LaneMark* y, float th, int v) {
+bool is_coline(LaneMark* x, LaneMark* y, float th, int v, float * score) {
 	LaneMark* lm1 = x;
 	LaneMark* lm2 = y;
-	if (x->maxx > y->minx) {
+	bool ret = false;
+	if (x->maxx > y->maxx) {
 		lm1 = y;
 		lm2 = x;
 	}
@@ -122,8 +123,9 @@ bool is_coline(LaneMark* x, LaneMark* y, float th, int v) {
 	float vx2 = lm2->min_line[0], vy2 = lm2->min_line[1];
 	//cout << "angle:" << abs(vx1 * vx2 + vy1 * vy2) << endl;
 	if (VERBOSE == 2 && v == 1) {
+		cout << lm1->maxx << " " << lm2->minx << endl;
 		cout << nn1 << " " << nn2 << endl;
-		cout << "dis:" << sqrt(dx * dx + dy * dy) << endl;
+		cout << "dis:" << dx * dx + dy * dy << endl;
 		cout << "angle:" << abs(vx1 * vx2 + vy1 * vy2) << endl;
 		pcl::PointXYZ l1p1, l1p2, l2p1, l2p2;
 		l1p1.x = lm1->maxx;
@@ -139,40 +141,52 @@ bool is_coline(LaneMark* x, LaneMark* y, float th, int v) {
 		custom_pcshow(lm1->points, lm2->points, l1p1, l1p2, l2p1, l2p2);
 
 	}
-	if (nn1)
-		return true;
-	if (nn2)
-		return true;
-	if (dx * dx + dy * dy < 50) {
-		//cout << "true" << endl;
-		return true;
-	}
-	/*if (lm1->maxx > lm2->minx)
-		return false;*/
-	
-	if (abs(vx1 * vx2 + vy1 * vy2) < 0.9) {
-		//cout << "false" << endl;
-		return false;
-		
-	}
 
 	cv::Vec4f& line1 = lm1->max_line;
 	cv::Vec4f& line2 = lm2->min_line;
-	
+
 	//cout << "get dis" << endl;
 	float d1 = disFromPointToLine(midx, midy, line1);
 	float d2 = disFromPointToLine(midx, midy, line2);
+	if (score != nullptr)
+		*score = sqrt(dx * dx + dy * dy) + d1 + d2;
 
 	//cout << d1 + d2 << endl;
-	
-	if (d1 + d2 < th) {
-		
-		//cout << "true" << endl;
+	if (nn1) {
+		//cout << "nn close true" << endl;
 		return true;
 	}
-	//cout << "false" << endl;
-	return false;
+	if (nn2) {
+		//cout << "nn close true" << endl;
+		return true;
+	}
+	if (dx * dx + dy * dy < 50) {
+		//cout << "close true" << endl;
+		return true;
+	}
+	//cout << "is too far away" << dx * dx + dy * dy << endl;
+	if (dx * dx + dy * dy > 250000 && v == 1) {
+		//cout << "too far away false" << endl;
+		return false;
+	}
+	/*if (lm1->maxx > lm2->minx)
+		return false;*/
 
+	if (abs(vx1 * vx2 + vy1 * vy2) < 0.9) {
+		//cout << "angle false" << endl;
+		return false;
+
+	}
+	if (d1 + d2 < th) {
+
+		//cout << "dir true" << endl;
+		return true;
+	}
+	//cout << "final false" << endl;
+	return false;
+	
+	//cout << d1 + d2 << endl;
+	
 }
 
 float disFromPointToLine(float x, float y, float z, cv::Vec6f line) {
@@ -237,7 +251,6 @@ vector<LaneMark*>  group2(vector<LaneMark*>& lanemarks) {
 			}
 			*p->points += *lanemark->points;
 			*p->points3D += *lanemark->points3D;
-			p->polyline.insert(p->polyline.end(), lanemark->polyline.begin(), lanemark->polyline.end());
 			delete lanemark;
 		}
 	}
@@ -276,7 +289,6 @@ vector<LaneMark*>  group(vector<LaneMark*>& lanemarks) {
 			}
 			*p->points += *lanemark->points;
 			*p->points3D += *lanemark->points3D;
-			p->polyline.insert(p->polyline.end(), lanemark->polyline.begin(), lanemark->polyline.end());
 			delete lanemark;
 		}
 	}
