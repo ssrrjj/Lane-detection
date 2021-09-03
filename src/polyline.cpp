@@ -108,7 +108,7 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud) {
     cout << left_x << " " << pts[left_idx].x << endl;
     CloudPtr toshow = filterByField(cloud, "x", pts[0].x, left_x);
     cout << "get show cloud" << endl;
-    //show(toshow, points);
+    show(toshow, points);
     //show(toshow, points);
 
     set<int> grid;
@@ -122,7 +122,6 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud) {
         }
         
         right_idx = i;
-        cout << "section size " << right_idx - left_idx << endl;
         int theta;
         Vec2f best_dir;
         int most_inlier = 0;
@@ -222,13 +221,15 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud) {
 
             
         }
-        //toshow = filterByField(cloud, "x", pts[0].x, left_x);
+        toshow = filterByField(cloud, "x", pts[0].x, left_x);
 
-        //cout << "get show cloud" << endl;
-        //show(toshow, points);
+        cout << "get show cloud" << endl;
+        show(toshow, points);
         if (right_idx >= pts.size() - 1)
             break;
     }
     //show(toshow, points);
     //show(cloud, points);
 }
+
+PolyLine::PolyLine() {}

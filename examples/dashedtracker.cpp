@@ -1,48 +1,3 @@
-//
-//#include "lanedetection.h"
-//#include "open3d/Open3D.h"
-//#include "utils.h"
-//#include <pcl/filters/voxel_grid.h>
-//#include <vector>
-//#include "polyline.h"
-//#include "solidtrack.h"
-//using namespace std;
-//using namespace cv;
-//
-//
-//int main(int argc, char* argv[])
-//{
-//    //pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
-//    //viewer->setBackgroundColor(0, 0, 0);
-//    //pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
-//    //for (int i = 0; i < 10; i++) {
-//    //    cloud->points.push_back(pcl::PointXYZ(i, i, i));
-//    //}
-//    //cloud->height = 1;
-//    //cloud->width = 10;
-//    //viewer->addPointCloud<pcl::PointXYZ>(cloud, "cloud");
-//    //viewer->addLine(cloud->points[0], cloud->points[9], 255,0,0,"line");
-//    //while (!viewer->wasStopped())
-//    //{
-//    //    viewer->spinOnce(100);
-//    //    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-//    //}
-//    // -----------------------------------------------------------------------------------------------
-//	//cv::Mat uimage = cv::imread(argv[1], cv::IMREAD_ANYDEPTH);
-//    // -----------------------------------------------------------------------------------------------
-//    
-//	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
-//    pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZI>);
-//    pcl::io::loadPCDFile(argv[1], *cloud);
-//    pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtree(new pcl::KdTreeFLANN<pcl::PointXYZI>);
-//    	kdtree->setInputCloud(cloud);
-//    	cout << "kdtree" << endl;
-//    tracksolid(cloud, kdtree, pcl::PointXYZ(-5343.6, 12617.5, -19.049), pcl::PointXYZ(-5337.61, 12610.3, -19.04));
-//    return 0;
-//
-//}
-
-
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_cloud.h>
@@ -51,7 +6,7 @@
 #include <thread>
 #include <mutex>
 #include "polyline.h"
-#include "solidtrack.h"
+#include "dashedtrack.h"
 
 typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
@@ -72,9 +27,9 @@ pp_callback(const pcl::visualization::PointPickingEvent& event, void* args)
 {
 	static int lineidx = 0;
 	static int do_clear = 0;
-	
+
 	struct callback_args* data = (struct callback_args*)args;
-	
+
 	if (event.getPointIndex() == -1)
 		return;
 	if (do_clear) {
@@ -93,24 +48,24 @@ pp_callback(const pcl::visualization::PointPickingEvent& event, void* args)
 	//data->viewerPtr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 10, "clicked_points");
 	std::cout << current_point.x << " " << current_point.y << " " << current_point.z << std::endl;
 	//data->viewerPtr->addSphere(current_point, 0.3, "sphere" + to_string(sphereidx));
-	
+
 	//data->viewerPtr->spin();
-	
-	if (data->clicked_points_3d->points.size() == 2) {
-		pcl::PointXYZ p1(data->clicked_points_3d->points[0].x, data->clicked_points_3d->points[0].y, data->clicked_points_3d->points[0].z);
-		pcl::PointXYZ p2(data->clicked_points_3d->points[1].x, data->clicked_points_3d->points[1].y, data->clicked_points_3d->points[1].z);
-		
-		
-		PolyLine line = solidtrack(data->cloud, data->kdtree, p1, p2);
+
+	if (data->clicked_points_3d->points.size() == 3) {
+		cv::Vec3f p1(data->clicked_points_3d->points[0].x, data->clicked_points_3d->points[0].y, data->clicked_points_3d->points[0].z);
+		cv::Vec3f p2(data->clicked_points_3d->points[1].x, data->clicked_points_3d->points[1].y, data->clicked_points_3d->points[1].z);
+		cv::Vec3f p3(data->clicked_points_3d->points[2].x, data->clicked_points_3d->points[2].y, data->clicked_points_3d->points[2].z);
+
+		PolyLine line = dashedtrack(data->cloud, data->kdtree, p1, p2, p3);
 		cout << line.points.size() << endl;
 		for (int point_idx = 0; point_idx < line.points.size() - 1; point_idx++) {
-			data->viewerPtr->addLine(line.points[point_idx], line.points[point_idx + 1], 255, 255, 255, "line"+to_string(lineidx));
+			data->viewerPtr->addLine(line.points[point_idx], line.points[point_idx + 1], 255, 255, 255, "line" + to_string(lineidx));
 			lineidx++;
 		}
 		data->clicked_points_3d->points.clear();
 		do_clear = 1;
 	}
-	
+
 
 }
 void main()

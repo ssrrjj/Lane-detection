@@ -171,21 +171,6 @@ pcfitplaneByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, std::vector<int>& i
       range = getYLimits(cloud);
   }
 
-  // Split into pieces 
- // int N = (range[1]-range[0]+1)/piece_width;
- //   
- // for(int i=0; i<N;i++){
- //     std::vector<int> indsetROI;
- //     std::vector<int> indsetPlane;
- //     float lb = range[0]+piece_width*i;
- //     float ub = range[0]+piece_width*(i+1);
- //     if(i==N-1) ub = range[1];
- //   pcl::PointCloud<pcl::PointXYZI>::Ptr inlierCloud =
-	//pcfitplane(filterByField(cloud, indsetROI, fieldname, lb,ub), indsetPlane, distThreshold);
- //     vector<int> ind = indexMapping(indsetROI, indsetPlane);
- //     indset.insert(indset.end(), ind.begin(), ind.end());
- // }
-
   auto cloud_ptr = pclToO3d(cloud);
   if (VERBOSE == 1) {
       cout << "fitplane input " << endl;
