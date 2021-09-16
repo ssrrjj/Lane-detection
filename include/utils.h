@@ -42,8 +42,12 @@ extern int VERBOSE;
 
 using namespace std;
 
+
 //
 typedef pcl::PointCloud<pcl::PointXYZI>::Ptr CloudPtr;
+
+void savepcd(CloudPtr cloud, string filename);
+
 vector<float>
 getXLimits(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
 
@@ -99,4 +103,7 @@ vector<string> SplitFilename(const std::string& str);
 
 cv::Mat toImage(CloudPtr cloud, Eigen::Vector4d plane_model, float grid_size, vector<vector<int>>& pixel2cloud);
 vector<vector<int>> ImageDbscan(cv::Mat& image, vector<int>& cloud2pixel, float eps = 3.0, int min_pts = 20);
+
+void pca(CloudPtr cloud, vector<Eigen::Vector3f>& eigenvalues);
+
 #endif /* INCLUDE_UTILS_H_ */

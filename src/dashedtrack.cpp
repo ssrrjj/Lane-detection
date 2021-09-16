@@ -132,7 +132,7 @@ PolyLine dashedtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtre
 
 		int h = uimage.rows;
 		int w = uimage.cols;
-
+		lanemark = removeFalsePostive(lanemark, LanePar());
 		lane_mark_idx.clear();
 		for (int i = 0; i < h; i++) {
 			for (int j = 0; j < w; j++) {
@@ -258,7 +258,7 @@ PolyLine dashedtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtre
 		//ret.points.clear();
 		candidate_lines.push_back(PointXYZ(min_p.x, min_p.y, 0));
 		candidate_lines.push_back(PointXYZ(max_p.x, max_p.y, 0));
-		showlines(cloud_2d, candidate_lines);
+		//showlines(cloud_2d, candidate_lines);
 		ret.points.push_back(PointXYZ(min_p.x, min_p.y, min_p.z));
 		ret.points.push_back(PointXYZ(max_p.x, max_p.y, max_p.z));
 		//show(toshow, ret.points);

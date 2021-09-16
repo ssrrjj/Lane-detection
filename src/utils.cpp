@@ -6,9 +6,14 @@
  */
 
 #include "utils.h"
+#include <pcl/common/pca.h>
+
 using namespace std;
 using namespace cv;
-
+void savepcd(CloudPtr cloud, string filename) {
+    pcl::PCDWriter writer;
+    writer.write<pcl::PointXYZI>(filename, *cloud, false);
+}
 int clamp(int v, int lo, int hi) {
   if (v>hi)
     v = hi;
@@ -549,12 +554,11 @@ Mat findLaneInImage(Mat uimage) {
     cv::morphologyEx(for_close, uimage, cv::MORPH_CLOSE, kernel);
 
     Mat res = uimage.clone();
-    cv::imwrite("road_image.png", uimage);
+    
     LUT(res, lookUpTable, uimage);
 
     
     //cout << "save road image" << endl;
-    cv::imwrite("road_image_gamma.png", uimage);
     if (VERBOSE == 1) {
         cv::imshow("road_image_gamma", uimage);
         waitKey(0);
@@ -588,7 +592,7 @@ Mat findLaneInImage(Mat uimage) {
     }*/
 
     //cout << "save lane image" << endl;
-    cv::imwrite("lane_image.png", lanemark);
+    //cv::imwrite("lane_image.png", lanemark);
     if (VERBOSE == 1) {
         cv::imshow("lane mark", lanemark);
         waitKey(0);
@@ -716,3 +720,23 @@ vector<string> SplitFilename(const std::string& str)
     return ret;
 }
 
+
+void pca(CloudPtr cloud, vector<Eigen::Vector3f> & eigenvalues) {
+    pcl::KdTreeFLANN<pcl::PointXYZI> kdtree;
+    kdtree.setInputCloud(cloud);
+    pcl::PCA<pcl::PointXYZI> pca_model;
+    for (int i = 0; i < cloud->points.size(); i++) {
+        pcl::PointXYZI point = cloud->points[i];
+        vector<float>pointRadiusSquaredDistance;
+        vector<int>pointIdxRadiusSearch;
+        int nn1 = kdtree.radiusSearch(point, 0.1, pointIdxRadiusSearch, pointRadiusSquaredDistance);
+        CloudPtr sub_region = select(cloud, pointIdxRadiusSearch);
+        if (sub_region->points.size() < 10)
+            eigenvalues.push_back(Eigen::Vector3f(0, 0, 0));
+        else {
+            pca_model.setInputCloud(sub_region);
+            eigenvalues.push_back(pca_model.getEigenValues());
+        }
+    }
+    return;
+}

@@ -6,3 +6,8 @@ python/
 .vs/
 data/
 CMakeSettings.json
+demo/
+*.pcd
+*.las
+*.odt
+*.bat

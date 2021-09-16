@@ -94,40 +94,7 @@ evalLaneCluster(pcl::PointCloud<pcl::PointXYZI>::Ptr& fullcloud, std::vector<int
   if(cnt5W<0.1*binWidth.size() && cnt3W>0.8*cnt3W){
       laneflag=0;
   }
-#ifdef REC_DETECT
-  if (laneflag == 0) {
 
-    // toImage(cloud, "lane_"+std::to_string(cloud_idx)+".jpg");
-    // cloud_idx += 1;
-    if (!isRect(cloud))
-      laneflag = 1;
-  }
-// 2D projection of input point cloud. Check if it is a rectangle. TODO: set resolution. We need to use opencv. how to compile opencv with cmake
-  // std::cout << "show the image" << std::endl;
-  // int density = 10;
-  // int h = ceil(density*(ylimits[1] - ylimits[0])), w = ceil(density*(xlimits[1] - xlimits[0]));
-  // std::cout << h << ", " << w << ", " << cloud->points.size() <<", "<< laneflag<<std::endl;
-  // // custom_pcshow(cloud);
-  // cv::Mat img = cv::Mat::zeros(h, w, CV_8UC3);
-  // int row, col;
-  
-  // for (int idx = 0; idx < cloud->points.size(); ++idx) {
-  //     row = round(density*(cloud->points[idx].y - ylimits[0]));
-  //     if (row < 0)
-  //         row = 0;
-  //     if (row >= h)
-  //         row = h-1;
-
-  //     col = round(density*(cloud->points[idx].x - xlimits[0]));
-  //     if (col < 0)
-  //         col = 0;
-  //     if (col >= w)
-  //         col = w-1;
-  //     img.at<cv::Vec3b>(row,col)[0] = 255;
-  // }
-  //cv::imshow("img", img);
-  //cv::waitKey(0);
-#endif
   return laneflag;
 }
 
@@ -392,7 +359,7 @@ findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, s
   writer.write<pcl::PointXYZI> ("ptcROI_debug.pcd", *ptcROI, false);
   //custom_pcshow(ptcROI);
 #endif
-  writer.write<pcl::PointXYZI>("ptcROI_debug.pcd", *ptcROI, false);
+  //writer.write<pcl::PointXYZI>("ptcROI_debug.pcd", *ptcROI, false);
   // Step 1: Extract road plane
   float distThreshold = par.plane_dist_threshold; // float distThreshold = 0.05; // float distThreshold = 0.15;
   vector<int> indsetROI;
@@ -565,24 +532,12 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
   assert(par.start <= N);
   pcl::PCDWriter writer;
   for(int i=(N+par.start)%N; i<=N; i++){
-      //if (i == 24) {
-      //    VERBOSE = 2;
-      //    for (int fka = 0; fka < all_marks.size(); fka++) {
-      //        writer.write<pcl::PointXYZI>("lanemark_" + to_string(fka) + ".pcd", *all_marks[fka]->points3D, false);
-      //    }
-      //}
       roi[0] = range[0]+subregion_width*i;
       roi[1] = range[0]+subregion_width*(i+1);
       if(i==N) roi[1] = range[1];
       std::vector<int> indset = findLanesByROI(cloud, roi, fieldname, par);
       pcl::PointCloud<pcl::PointXYZI>::Ptr lane_ptc = select(cloud, indset);
       pcl::PCDWriter subwriter;
-      // #ifdef REC_DETECT
-      //   subwriter.write<pcl::PointXYZI> (pcdfile.substr(0, pcdfile.find(".pcd"))+"_rect_output"+std::to_string(i)+".pcd", *lane_ptc, false);
-      // #else
-      //   subwriter.write<pcl::PointXYZI> (pcdfile.substr(0, pcdfile.find(".pcd"))+"_output"+std::to_string(i)+".pcd", *lane_ptc, false);
-      // #endif
-      // custom_pcshow(lane_ptc);
       for(const auto & p: indset)
         lanepts[p]=1;
       
@@ -623,9 +578,7 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
   // Write the extracted plane to disk
   
   
-#ifdef REC_DETECT
-  writer.write<pcl::PointXYZI> (pcdfile.substr(0, pcdfile.find(".pcd"))+"_rect_output.pcd", *select(cloud, lane_indset), false);
-#else
+
   
   //if (!exists(output_file_path))
     writer.write<pcl::PointXYZI> (output_file_path+".pcd", *select(cloud, lane_indset), false);
@@ -661,7 +614,6 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
   }
     myfile.close();
     
-#endif
 #ifdef DEBUG
   custom_pcshow(select(cloud, lane_indset));
 #endif
@@ -899,7 +851,7 @@ vector<int> findLaneByImage(vector<LaneMark*>& marks, pcl::PointCloud<pcl::Point
         imshow("remove fp", lanemark);
         waitKey(0);
     }
-    cv::imwrite("lane_image_f.png", lanemark);
+    
 
 
     lane_mark_idx.clear();

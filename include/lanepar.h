@@ -21,8 +21,8 @@ public:
     subregion_width = 50.0;
     plane_dist_threshold = 0.05;
     lane_width = 0.2;
-    dbscan_minpts = 10;
-    lanemark_minpts = 100;
+    dbscan_minpts = 3;
+    lanemark_minpts = 10;
     verbose = 0;
     save_to = "result";
     dbscan_dis = 10.0;
