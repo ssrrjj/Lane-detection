@@ -322,6 +322,7 @@ custom_pcshow(vector<LaneMark*> & marks) {
 	while (!viewer->wasStopped())
 	{
 		viewer->spinOnce(100);
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		//boost::this_thread::sleep (boost::posix_time::microseconds (100000));
 	}
 }

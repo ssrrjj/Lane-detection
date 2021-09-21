@@ -26,7 +26,8 @@
 #include <pcl/search/search.h>
 #include <pcl/search/kdtree.h>
 #include <pcl/features/normal_3d.h>
-#include <pcl/common/impl/transforms.hpp>
+#include <pcl/common/transforms.h>
+#include <pcl/impl/point_types.hpp>
 
 #include <string>
 #include "opencv2/opencv.hpp"
@@ -34,10 +35,13 @@
 #include <algorithm>
 #include "pcshow.h"
 #include "dbscan.h"
-#include "open3d/Open3D.h"
+//#include "open3d/Open3D.h"
 #include <math.h>
 
 #include "lanepar.h"
+
+#include <boost/chrono.hpp>
+#include <boost/thread/thread.hpp> 
 extern int VERBOSE;
 
 using namespace std;
@@ -95,7 +99,7 @@ regionGrowSeg(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<int> & idx);
 bool isRect(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
 
 // convert pcl::pointcloud to open3d::pointcloud
-std::shared_ptr<open3d::geometry::PointCloud> pclToO3d(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
+//std::shared_ptr<open3d::geometry::PointCloud> pclToO3d(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
 
 
 cv::Mat findLaneInImage(cv::Mat uimage);
