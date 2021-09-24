@@ -4,10 +4,8 @@ project(planar_segmentation)
 
 find_package(PCL  REQUIRED)
 find_package( OpenCV REQUIRED )
-find_package( PythonLibs REQUIRED)
 find_package( shapelib REQUIRED)
 
-include_directories(${PYTHON_INCLUDE_DIRS})
 # cmake -DCMAKE_BUILD_TYPE=Debug ../
 
 # The options need to be the same as Open3D's default

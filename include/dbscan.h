@@ -7,7 +7,7 @@
 
 #ifndef INCLUDE_DBSCAN_H_
 #define INCLUDE_DBSCAN_H_
-
+#include "utils.h"
 #include <pcl/point_cloud.h>
 #include <pcl/octree/octree_search.h>
 #include <pcl/io/pcd_io.h>
@@ -18,7 +18,7 @@
 #include <vector>
 #include <ctime>
 
-#include "utils.h"
+
 
 /**
  * \brief This class implements the DBSCAN algorithm based on density of the point cloud.

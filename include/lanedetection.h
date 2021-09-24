@@ -7,13 +7,13 @@
 
 #ifndef INCLUDE_LANEDETECTION_H_
 #define INCLUDE_LANEDETECTION_H_
-
+#include "utils.h"
 #include <vector>
 #include <pcl/point_cloud.h>
 
 #include "pcfitplane.h"
 #include "dbscan.h"
-#include "utils.h"
+
 #include "lanepar.h"
 #include "lanemark.h"
 

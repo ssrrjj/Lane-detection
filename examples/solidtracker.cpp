@@ -1,58 +1,13 @@
-//
-//#include "lanedetection.h"
-//#include "open3d/Open3D.h"
-//#include "utils.h"
-//#include <pcl/filters/voxel_grid.h>
-//#include <vector>
-//#include "polyline.h"
-//#include "solidtrack.h"
-//using namespace std;
-//using namespace cv;
-//
-//
-//int main(int argc, char* argv[])
-//{
-//    //pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
-//    //viewer->setBackgroundColor(0, 0, 0);
-//    //pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
-//    //for (int i = 0; i < 10; i++) {
-//    //    cloud->points.push_back(pcl::PointXYZ(i, i, i));
-//    //}
-//    //cloud->height = 1;
-//    //cloud->width = 10;
-//    //viewer->addPointCloud<pcl::PointXYZ>(cloud, "cloud");
-//    //viewer->addLine(cloud->points[0], cloud->points[9], 255,0,0,"line");
-//    //while (!viewer->wasStopped())
-//    //{
-//    //    viewer->spinOnce(100);
-//    //    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-//    //}
-//    // -----------------------------------------------------------------------------------------------
-//	//cv::Mat uimage = cv::imread(argv[1], cv::IMREAD_ANYDEPTH);
-//    // -----------------------------------------------------------------------------------------------
-//    
-//	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
-//    pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZI>);
-//    pcl::io::loadPCDFile(argv[1], *cloud);
-//    pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtree(new pcl::KdTreeFLANN<pcl::PointXYZI>);
-//    	kdtree->setInputCloud(cloud);
-//    	cout << "kdtree" << endl;
-//    tracksolid(cloud, kdtree, pcl::PointXYZ(-5343.6, 12617.5, -19.049), pcl::PointXYZ(-5337.61, 12610.3, -19.04));
-//    return 0;
-//
-//}
-
-
-
+#include "polyline.h"
+#include "solidtrack.h"
+#include "LasStream.h"
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <thread>
 #include <mutex>
-#include "polyline.h"
-#include "solidtrack.h"
-#include "LasStream.h"
+
 
 typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;

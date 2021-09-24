@@ -7,7 +7,7 @@
 
 #ifndef INCLUDE_UTILS_H_
 #define INCLUDE_UTILS_H_
-
+#include <open3d/Open3D.h>
 #include <iostream>
 #include <pcl/ModelCoefficients.h>
 #include <pcl/io/pcd_io.h>
@@ -37,7 +37,7 @@
 #include <math.h>
 
 #include<boost/make_shared.hpp>
-#include <open3d/Open3D.h>
+
 #include "lanepar.h"
 extern int VERBOSE;
 

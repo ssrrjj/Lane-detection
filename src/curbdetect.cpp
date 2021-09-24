@@ -9,7 +9,6 @@ Voxel::Voxel() {
 	max_z = 0;
 	min_z = 0;
 	
-	
 }
 void Voxel::add(pcl::PointXYZI p, int i) {
 	if (points->points.size() == 0) {

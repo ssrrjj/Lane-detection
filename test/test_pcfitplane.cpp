@@ -4,11 +4,9 @@
  *  Created on: May 20, 2021
  *      Author: aina
  */
-
-#include "pcfitplane.h"
 #include "utils.h"
+#include "pcfitplane.h"
 #include "pcshow.h"
-#include "open3d/Open3D.h"
 
 
 void test_pcfitplane(){

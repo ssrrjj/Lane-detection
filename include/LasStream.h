@@ -1,10 +1,11 @@
 #pragma once
+#include "utils.h"
 #include <fstream>
 #include <memory>
 #include <vector>
 #include <string>
 #include "las_consts_structs.h"
-#include "utils.h"
+
 namespace las
 {
     

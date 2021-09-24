@@ -7,7 +7,6 @@
 
 #ifndef INCLUDE_PCFITPLANE_H_
 #define INCLUDE_PCFITPLANE_H_
-
 #include <iostream>
 #include <pcl/ModelCoefficients.h>
 #include <pcl/io/pcd_io.h>
@@ -21,7 +20,7 @@
 #include <pcl/point_types.h>
 #include <pcl/filters/passthrough.h>
 #include <string>
-#include "open3d/Open3D.h"
+
 
 using namespace std;
 

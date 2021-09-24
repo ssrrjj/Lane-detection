@@ -1,5 +1,6 @@
-#include "pcfitplane.h"
 #include "utils.h"
+#include "pcfitplane.h"
+
 #include <cmath>
 
 void plane_filter(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, vector<int> & inlier, vector<float> & param) {
