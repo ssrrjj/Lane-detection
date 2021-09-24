@@ -5,6 +5,7 @@ project(planar_segmentation)
 find_package(PCL  REQUIRED)
 find_package( OpenCV REQUIRED )
 find_package( PythonLibs REQUIRED)
+find_package( shapelib REQUIRED)
 
 include_directories(${PYTHON_INCLUDE_DIRS})
 # cmake -DCMAKE_BUILD_TYPE=Debug ../
@@ -32,19 +33,28 @@ include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
+include_directories( ${shapelib_INCLUDE_DIRS})
+
+
 file(GLOB CPP_SOURCES src/*.cpp)
 
 add_library( lanedetection ${CPP_SOURCES} )
 #target_compile_options(lanedetection PRIVATE -O3)
 target_include_directories(lanedetection PUBLIC include/ src/)
-target_link_libraries( lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D ${PYTHON_LIBRARIES})
+target_link_libraries( lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} ${shapelib_LIBRARIES} Open3D::Open3D )
 
+
+#add_library( lanedetect STATIC ${CPP_SOURCES} )
+#target_include_directories(lanedetect PUBLIC include/ src/)
+#target_link_libraries( lanedetect ${PCL_LIBRARIES} ${OpenCV_LIBS} ${shapelib_LIBRARIES} Open3D::Open3D )
 ################# Compile the applications ###########################
 
 # Application lanedet
 add_executable (lanedet examples/lanedet.cpp )
 target_include_directories(lanedet PUBLIC include/)
-target_link_libraries (lanedet lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D ${PYTHON_LIBRARIES})
+target_link_libraries (lanedet lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D )
+
+
 
 # pointcloudview
 add_executable (ptcviewer examples/ptcviewer.cpp )
@@ -54,39 +64,42 @@ target_link_libraries (ptcviewer lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS})
 # lane from plane
 add_executable (LFP examples/lane_from_plane.cpp )
 target_include_directories(LFP PUBLIC include/)
-target_link_libraries (LFP lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D ${PYTHON_LIBRARIES})
+target_link_libraries (LFP lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D)
 
 # gen_image
 add_executable (gen_image examples/gen_image.cpp )
 target_include_directories(gen_image PUBLIC include/)
-target_link_libraries (gen_image lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D ${PYTHON_LIBRARIES})
+target_link_libraries (gen_image lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D)
 
 # dashed line tracker
 add_executable (dashedtracker examples/dashedtracker.cpp )
 target_include_directories(dashedtracker PUBLIC include/)
-target_link_libraries (dashedtracker lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D ${PYTHON_LIBRARIES})
+target_link_libraries (dashedtracker lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D )
 
 # solid line tracker
 add_executable (solidtracker examples/solidtracker.cpp)
 target_include_directories(solidtracker PUBLIC include/)
-target_link_libraries (solidtracker lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D ${PYTHON_LIBRARIES})
+target_link_libraries (solidtracker lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D )
 
 # curb detector
 add_executable (curbdetector examples/curbdetector.cpp )
 target_include_directories(curbdetector PUBLIC include/)
-target_link_libraries (curbdetector lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D ${PYTHON_LIBRARIES})
+target_link_libraries (curbdetector lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D)
 
 # curb detector
 add_executable (signdetector examples/signdetector.cpp )
 target_include_directories(signdetector PUBLIC include/)
-target_link_libraries (signdetector lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D ${PYTHON_LIBRARIES})
+target_link_libraries (signdetector lanedetection ${PCL_LIBRARIES} ${OpenCV_LIBS} Open3D::Open3D )
 
 ################# Compile the tests ###################################
 
 # test plane model fitting
 add_executable (test_pcfitplane test/test_pcfitplane.cpp )
 target_include_directories(test_pcfitplane PUBLIC include/)
-target_link_libraries (test_pcfitplane lanedetection ${PCL_LIBRARIES} Open3D::Open3D ${PYTHON_LIBRARIES})
+target_link_libraries (test_pcfitplane lanedetection ${PCL_LIBRARIES} Open3D::Open3D)
+
+
+
 
 #if(WIN32)
 get_target_property(open3d_type Open3D::Open3D TYPE)
@@ -98,6 +111,13 @@ if(open3d_type STREQUAL "SHARED_LIBRARY")
                                 ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 endif()
 #endif()
+
+# test shapefile
+#add_executable (test_shp test/shapefile.cpp)
+#target_include_directories(test_shp PUBLIC include/)
+#target_link_libraries (test_shp lanedetection ${shapelib_LIBRARIES} ${PCL_LIBRARIES})
+
+
 # test DBSCAN
 #add_executable (test_dbscan test/test_dbscan.cpp)
 #target_include_directories(test_dbscan PUBLIC include/)

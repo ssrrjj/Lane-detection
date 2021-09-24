@@ -21,8 +21,11 @@ PointXYZ pointxyz(cv::Vec3f p) {
 	return PointXYZ(p[0], p[1], p[2]);
 }
 
-PointXYZI operator+(const PointXYZI&p, cv::Vec3f&v) {
-	return PointXYZI(p.x + v[0], p.y + v[1], p.z + v[2]);
+PointXYZI shift(PointXYZI p, cv::Vec3f&v) {
+	p.x += v[0];
+	p.y += v[1];
+	p.z += v[2];
+	return p;
 }
 
 cv::Vec3f vec(const PointXYZI& p) {
@@ -114,7 +117,7 @@ PolyLine dashedtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtre
 		//project cur_mid to the plane:
 		cv::Vec3f normal(plane_model[0], plane_model[1], plane_model[2]);
 		cout << norm(normal) << endl;
-		cur_mid = cur_mid + (-normal[0] * cur_mid.x - normal[1] * cur_mid.y - normal[2] * cur_mid.z - plane_model[3]) * normal;
+		cur_mid = shift(cur_mid, (-normal[0] * cur_mid.x - normal[1] * cur_mid.y - normal[2] * cur_mid.z - plane_model[3]) * normal);
 
 		
 		vector<vector<int>> pixel2cloud;
@@ -242,8 +245,8 @@ PolyLine dashedtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtre
 		}
 		//cout << "dmin:" << d_min << " dmax:" << d_max << endl;
 
-		PointXYZI max_p = cur + d_max * last_dir;
-		PointXYZI min_p = cur + d_min * last_dir;
+		PointXYZI max_p = shift(cur, d_max * last_dir);
+		PointXYZI min_p = shift(cur, d_min * last_dir);
 		
 		float cur_stripe_len = norm(vec(max_p) - vec(min_p));
 		float cur_stripe_gap = norm(vec(min_p) - vec(ret.points.back()));
@@ -252,7 +255,7 @@ PolyLine dashedtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtre
 		stripe_len += 0.1 * (cur_stripe_len - stripe_len);
 		stripe_gap += 0.1 * (cur_stripe_gap - stripe_gap);
 
-		cur_mid = max_p + last_dir * (stripe_gap + 0.5 * stripe_len);
+		cur_mid = shift(max_p, last_dir * (stripe_gap + 0.5 * stripe_len));
 		cout << "show" << endl;
 		*toshow += *lane_mark_cloud;
 		//ret.points.clear();
@@ -276,7 +279,6 @@ PolyLine dashedtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtre
 			line += to_string(point.x) + ",";
 			line += to_string(point.y) + ",";
 			line += to_string(point.z) + " ";
-
 		}
 		myfile << line;
 	}

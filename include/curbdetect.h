@@ -5,7 +5,7 @@
 class Voxel {
 public:
 	float max_z, min_z;
-	CloudPtr points;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr points;
 	vector<int> idx;
 
 
@@ -15,5 +15,5 @@ public:
 	
 
 };
-void FindCurbByROI(CloudPtr cloud, CloudPtr result);
+void FindCurbByROI(CloudPtr cloud, CloudPtr result, CloudPtr flat);
 CloudPtr FindCurb(CloudPtr cloud);

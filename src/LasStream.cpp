@@ -71,15 +71,15 @@ namespace las
     template <class T>
     void LasOutputStream<T>::set_system_identifier(const std::string& system_identifier)
     {
-        strcpy_s(header_.system_identifier, system_identifier.c_str());
+        strcpy(header_.system_identifier, system_identifier.c_str());
     }
 
     template <class T>
     void LasOutputStream<T>::set_generating_software(const std::string& generating_software)
     {
-        strcpy_s(header_.generating_software, generating_software.c_str());
+        strcpy(header_.generating_software, generating_software.c_str());
     }
-
+    
     template <class T>
     void LasOutputStream<T>::set_file_creation_day(const uint16_t day)
     {

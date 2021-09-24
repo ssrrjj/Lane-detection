@@ -34,9 +34,10 @@
 #include <algorithm>
 #include "pcshow.h"
 #include "dbscan.h"
-#include "open3d/Open3D.h"
 #include <math.h>
 
+#include<boost/make_shared.hpp>
+#include <open3d/Open3D.h>
 #include "lanepar.h"
 extern int VERBOSE;
 
@@ -44,7 +45,7 @@ using namespace std;
 
 
 //
-typedef pcl::PointCloud<pcl::PointXYZI>::Ptr CloudPtr;
+using CloudPtr = pcl::PointCloud<pcl::PointXYZI>::Ptr ;
 
 void savepcd(CloudPtr cloud, string filename);
 
@@ -104,6 +105,6 @@ vector<string> SplitFilename(const std::string& str);
 cv::Mat toImage(CloudPtr cloud, Eigen::Vector4d plane_model, float grid_size, vector<vector<int>>& pixel2cloud);
 vector<vector<int>> ImageDbscan(cv::Mat& image, vector<int>& cloud2pixel, float eps = 3.0, int min_pts = 20);
 
-void pca(CloudPtr cloud, vector<Eigen::Vector3f>& eigenvalues);
+void pca(CloudPtr cloud, vector<Eigen::Vector3f>& eigenvalues, float radius = 0.1);
 
 #endif /* INCLUDE_UTILS_H_ */

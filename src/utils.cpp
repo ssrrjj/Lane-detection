@@ -684,7 +684,7 @@ std::shared_ptr<open3d::geometry::PointCloud> pclToO3d(pcl::PointCloud<pcl::Poin
         Eigen::Vector3d point(x, y, z);
         points.push_back(point);
     }
-    auto o3d_cloud_ptr = std::make_shared<open3d::geometry::PointCloud>(points);
+    std::shared_ptr<open3d::geometry::PointCloud> o3d_cloud_ptr = std::make_shared<open3d::geometry::PointCloud>(points);
     return o3d_cloud_ptr;
 
 }
@@ -694,7 +694,7 @@ std::shared_ptr<open3d::geometry::PointCloud> pclToO3d(pcl::PointCloud<pcl::Poin
 //    pcl::PointCloud<pcl::PointXYZI>::Ptr pcl_cloud = (new pcl::PointCloud<pcl::PointXYZI>);
 //    int n = cloud->points_.size();
 //    pcl_cloud->height = 1;
-//    pcl_cloud->weight = n;
+//    pcl_cloud->width = n;
 //    for (int i = 0; i < n; i++) {
 //        Eigen::Vector3d point = cloud->points_[i];
 //        float x, y, z;
@@ -714,14 +714,23 @@ vector<string> SplitFilename(const std::string& str)
     
     std::cout << "Splitting: " << str << '\n';
     std::size_t found = str.find_last_of("/\\");
-    string path = str.substr(0, found);
-    string file = str.substr(found + 1);
+    string path, file;
+    if (found == string::npos) {
+        path = "./";
+        file = str;
+
+    }
+    else {
+        path = str.substr(0, found);
+        file = str.substr(found + 1);
+    }
+    
     vector<string> ret{path, file};
     return ret;
 }
 
 
-void pca(CloudPtr cloud, vector<Eigen::Vector3f> & eigenvalues) {
+void pca(CloudPtr cloud, vector<Eigen::Vector3f> & eigenvalues, float radius) {
     pcl::KdTreeFLANN<pcl::PointXYZI> kdtree;
     kdtree.setInputCloud(cloud);
     pcl::PCA<pcl::PointXYZI> pca_model;
@@ -729,7 +738,7 @@ void pca(CloudPtr cloud, vector<Eigen::Vector3f> & eigenvalues) {
         pcl::PointXYZI point = cloud->points[i];
         vector<float>pointRadiusSquaredDistance;
         vector<int>pointIdxRadiusSearch;
-        int nn1 = kdtree.radiusSearch(point, 0.1, pointIdxRadiusSearch, pointRadiusSquaredDistance);
+        int nn1 = kdtree.radiusSearch(point, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance);
         CloudPtr sub_region = select(cloud, pointIdxRadiusSearch);
         if (sub_region->points.size() < 10)
             eigenvalues.push_back(Eigen::Vector3f(0, 0, 0));

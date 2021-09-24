@@ -52,7 +52,7 @@
 #include <mutex>
 #include "polyline.h"
 #include "solidtrack.h"
-#include "lasStream.h"
+#include "LasStream.h"
 
 typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;

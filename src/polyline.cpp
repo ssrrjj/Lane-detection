@@ -1,5 +1,7 @@
 #include "polyline.h"
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/sample_consensus/ransac.h>
+#include <pcl/sample_consensus/sac_model_line.h>
 #include <set>
 
 using namespace cv;
@@ -54,18 +56,26 @@ vector<pcl::PointXYZ> ransac_line(CloudPtr cloud, pcl::PointIndices::Ptr inliers
     // Create the segmentation object
     pcl::SACSegmentation<pcl::PointXYZI> seg;
     // Optional
-    seg.setOptimizeCoefficients(true);
     seg.setMaxIterations(1000);
-    seg.setNumberOfThreads(8);
     // Mandatory
     seg.setModelType(pcl::SACMODEL_LINE);
     seg.setMethodType(pcl::SAC_LMEDS);
-    seg.setDistanceThreshold(0.2); // pcfitplane use 0.05 as the maxDistance, here use 0.15, need some calibration
+    seg.setDistanceThreshold(0.2); 
 
     seg.setInputCloud(cloud);
     seg.segment(*inliers, *coefficients);
+
+    //pcl::SampleConsensusModelLine<pcl::PointXYZI>::Ptr
+    //    model_l(new pcl::SampleConsensusModelLine<pcl::PointXYZI>(cloud));
+    //pcl::RandomSampleConsensus<pcl::PointXYZI> ransac(model_l);
+    //ransac.setDistanceThreshold(0.2);
+    //ransac.computeModel();
+    //ransac.getInliers(inliers->indices);
+    //Eigen::Vector4d 
+    //model_l->computeModelCoefficients(inliers->indices, coefficients->values)
     vector<pcl::PointXYZ> ret(2);
     bool first = true;
+    cout << "ransac line inliers:" << inliers->indices.size() << endl;
     for (int i : inliers->indices) {
         
         pcl::PointXYZI tmp = cloud->points[i];
@@ -83,6 +93,9 @@ vector<pcl::PointXYZ> ransac_line(CloudPtr cloud, pcl::PointIndices::Ptr inliers
                 ret[0] = t;
         }
     }
+    cout << cloud->points.size() << endl;
+    //custom_pcshow(cloud);
+    //show(cloud, ret);
     return ret;
 }
 
@@ -121,7 +134,42 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_thre
         pts.push_back(pcl::PointXYZ(point.x, point.y, point.z));
     }
     sort(pts.begin(), pts.end(), &point_sorter);
-    CloudPtr to_start = filterByField(cloud_filtered, "x", pts[0].x, pts[0].x + 3);
+
+    set<int> grid;
+
+    int start_right = 0;
+    grid.clear();
+    while (grid.size() < 50 && start_right < pts.size()) {
+        grid.insert((int)(pts[start_right].x / 0.1));
+        start_right += 1;
+    }
+    start_right -= 1;
+     
+    CloudPtr to_start = filterByField(cloud_filtered, "x", pts[0].x, pts[start_right].x);
+    pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+    pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+    vector<pcl::PointXYZ> endpts = ransac_line(to_start, inliers, coefficients);
+    Vec3f N = Vec3f(coefficients->values[3], coefficients->values[4], coefficients->values[5]);
+    Vec3f X0 = Vec3f(coefficients->values[0], coefficients->values[1], coefficients->values[2]);
+
+    N = N / N[0];
+    //Vec3f X1 = X0 + N * (pts[left_idx].x - X0[0]);
+    //Vec3f X2 = X0 + N * (pts[i].x - X0[0]);
+    //points.push_back(pcl::PointXYZ(X1[0], X1[1], X1[2]));
+    points.push_back(endpts[1]);
+    //show(to_start, points);
+    Vec2f last_dir(N[0], N[1]);
+    Vec2f last_p(endpts[1].x, endpts[1].y);
+    int left_idx = start_right;
+    int right_idx = start_right;
+    float left_x = pts[right_idx].x;
+    points.push_back(endpts[0]);
+    points.push_back(endpts[1]);
+    CloudPtr toshow = filterByField(cloud, "x", pts[0].x, left_x);
+    cout << points.back().x << " " << points.back().y << endl;
+    //show(toshow, points);
+    //---------------------------------------------bad-----------------------------------------
+    /*CloudPtr to_start = filterByField(cloud_filtered, "x", pts[0].x, pts[0].x + 3);
 
 
     pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
@@ -141,10 +189,10 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_thre
     float left_x = pts[0].x + 3;
     Vec2f last_dir(N[0], N[1]);
     Vec2f last_p(X2[0], X2[1]);
-    CloudPtr toshow = filterByField(cloud, "x", pts[0].x, left_x);
+    CloudPtr toshow = filterByField(cloud, "x", pts[0].x, left_x);*/
     //show(toshow, points);
 
-    set<int> grid;
+    
     while (true) {
         int i = left_idx;
         
@@ -226,12 +274,13 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_thre
 
 
             vector<pcl::PointXYZ> endpts = ransac_line(to_start, inliers, coefficients);
+            cout << coefficients->values[0] << " " << coefficients->values[2] << " " << coefficients->values[3] << " " << coefficients->values[4] << endl;
             N = Vec3f(coefficients->values[3], coefficients->values[4], coefficients->values[5]);
             X0 = Vec3f(coefficients->values[0], coefficients->values[1], coefficients->values[2]);
 
             N = N / N[0];
             //Vec3f X1 = X0 + N * (pts[left_idx].x - X0[0]);
-            Vec3f X2 = X0 + N * (pts[i].x - X0[0]);
+            //Vec3f X2 = X0 + N * (pts[i].x - X0[0]);
             //points.push_back(pcl::PointXYZ(X1[0], X1[1], X1[2]));
             points.push_back(endpts[1]);
             //show(to_start, points);
@@ -251,7 +300,7 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_thre
             
         }
         toshow = filterByField(cloud, "x", pts[0].x, left_x);
-
+        cout << points.back().x <<" "<< points.back().y << endl;
         //show(toshow, points);
         if (right_idx >= pts.size() - 1)
             break;

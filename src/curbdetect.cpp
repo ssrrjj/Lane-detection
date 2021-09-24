@@ -36,7 +36,7 @@ float Voxel::getnorm(Eigen::Vector4f& plane_parameters) {
 	norm_vec /= norm_vec.norm();
 	return abs(norm_vec[2]);
 }
-void FindCurbByROI(CloudPtr cloud, CloudPtr result) {
+void FindCurbByROI(CloudPtr cloud, CloudPtr result, CloudPtr flat_result) {
 	cout << cloud->points.size() << endl;
 	if (cloud->points.size() < 100)
 		return;
@@ -51,9 +51,9 @@ void FindCurbByROI(CloudPtr cloud, CloudPtr result) {
 	sor.filter(*cloud_filtered);
 	cout << cloud_filtered->points.size() << endl;
 	//cloud = cloud_filtered;
-	pcfitplaneByROI(cloud_filtered, plane_inliers, plane_model, 0.3);
+	pcfitplaneByROI(cloud_filtered, plane_inliers, plane_model, 0.1);
 	
-	/*plane_inliers.clear();
+	plane_inliers.clear();
 	for (int i = 0; i < cloud->points.size(); i++) {
 		float a, b, c, d;
 		a = plane_model[0];
@@ -64,15 +64,15 @@ void FindCurbByROI(CloudPtr cloud, CloudPtr result) {
 		x = cloud->points[i].x;
 		y = cloud->points[i].y;
 		z = cloud->points[i].z;
-		if (abs(a * x + b * y + c * z + d) / sqrt(a * a + b * b + c * c) < 0.15) {
+		if (abs(a * x + b * y + c * z + d) / sqrt(a * a + b * b + c * c) < 0.3) {
 			plane_inliers.push_back(i);
 		}
-	}*/
+	}
 	//cout << plane_inliers.size() << endl;
-	CloudPtr plane = select(cloud_filtered, plane_inliers);
+	CloudPtr plane = select(cloud, plane_inliers);
 	
 	savepcd(plane, "plane.pcd");
-	custom_pcshow(plane);
+	//custom_pcshow(plane);
 	//CloudPtr plane = select(cloud, plane_inliers);
 	
 	//rotate the plane to be horizontal.
@@ -95,7 +95,6 @@ void FindCurbByROI(CloudPtr cloud, CloudPtr result) {
 	plane = transformed_plane;
 
 	
-	
 
 
 
@@ -103,7 +102,7 @@ void FindCurbByROI(CloudPtr cloud, CloudPtr result) {
 	std::shared_ptr<open3d::geometry::PointCloud> o3dplane = pclToO3d(plane);
 	open3d::geometry::KDTreeSearchParamHybrid kdparam(0.1, 30);
 	o3dplane->EstimateNormals(kdparam);
-	
+
 	// estimate normals using pcl
 	//pcl::NormalEstimation<pcl::PointXYZI, pcl::Normal> ne;
 	//ne.setInputCloud(plane);
@@ -124,11 +123,12 @@ void FindCurbByROI(CloudPtr cloud, CloudPtr result) {
 
 	vector<float> xlimit = getXLimits(plane);
 	vector<float> ylimit = getYLimits(plane);
+
 	float grid_size = 0.1;
 	int h, w;
 	w = int((xlimit[1] - xlimit[0]) / grid_size) + 1;
 	h = int((ylimit[1] - ylimit[0]) / grid_size) + 1;
-	//cout << "h, w " << h << "," << w << endl;
+	cout << "h, w " << h << "," << w << endl;
 	
 	vector<Voxel> grid(h * w + 1);
 	//cout << h * w + 1 << endl;
@@ -138,11 +138,9 @@ void FindCurbByROI(CloudPtr cloud, CloudPtr result) {
 		double y = point[1];
 		int point_w = (x - xlimit[0]) / grid_size;
 		int point_h = (y - ylimit[0]) / grid_size;
-		//cout << point_h * w + point_w << endl;
 		
 		grid[point_h * w + point_w].add(pcl::PointXYZI(x,y,point[2]), i);
 	}
-	cout << "grid created" << endl;
 	vector<int>curb_inliers;
 	//CloudPtr result(new pcl::PointCloud<pcl::PointXYZI>);
 	CloudPtr result_trans(new pcl::PointCloud<pcl::PointXYZI>);
@@ -164,7 +162,7 @@ void FindCurbByROI(CloudPtr cloud, CloudPtr result) {
 	}
 	elevation_diff->height = 1;
 	elevation_diff->width = elevation_diff->points.size();
-	custom_pcshow(elevation_diff);
+	//custom_pcshow(elevation_diff);
 	result_trans->height = 1;
 	result_trans->width = result_trans->points.size();
 	
@@ -172,6 +170,25 @@ void FindCurbByROI(CloudPtr cloud, CloudPtr result) {
 	// Rotate the result back
 	
 	pcl::transformPointCloud(*result_trans, *result, T.inverse());
+	//custom_pcshow(result);
+	//calculate planarity 
+
+	vector<Eigen::Vector3f> eigen_values;
+	pca(result, eigen_values);
+
+	vector<int> planar_inliers;
+
+	for (int i = 0; i < result->points.size(); i++) {
+		Eigen::Vector3f& eigenvalue = eigen_values[i];
+		if (eigenvalue[0] == 0)
+			continue;
+
+		float lam1 = eigenvalue[0], lam2 = eigenvalue[1], lam3 = eigenvalue[2];
+		result->points[i].intensity = lam3 / (lam1 + lam2 + lam3);
+	}
+	
+	//CloudPtr planar_result = select(result, planar_inliers);
+	//custom_pcshow(planar_result);
 
 	for (int i = 0; i < result->points.size(); i++) {
 		float a, b, c, d;
@@ -188,12 +205,13 @@ void FindCurbByROI(CloudPtr cloud, CloudPtr result) {
 		Eigen::Vector3f normal_vector(a, b, c);
 		float normal_vector_norm = normal_vector.norm();
 		Eigen::Vector3f projection = result_point - k / normal_vector_norm / normal_vector_norm * normal_vector;
-		result->points[i].x = projection[0];
-		result->points[i].y = projection[1];
-		result->points[i].z = projection[2];
+		//cout << a * projection[0] + b * projection[1] + c * projection[2] + d << endl;
+		flat_result->points.push_back(pcl::PointXYZI(projection[0], projection[1], projection[2], result->points[i].intensity));
 	}
+	flat_result->height = 1;
+	flat_result->width = flat_result->points.size();
 	savepcd(result, "result.pcd");
-	custom_pcshow(result);
+	
 	return;
 }
 
@@ -239,32 +257,37 @@ CloudPtr FindCurb(CloudPtr cloud) {
 	assert(par.start <= N);
 	pcl::PCDWriter writer;
 	CloudPtr result(new pcl::PointCloud<pcl::PointXYZI>);
-	for (int i = 0; i <= N; i++) {
+	CloudPtr flat_result(new pcl::PointCloud<pcl::PointXYZI>);
+	for (int i = 3; i <= N; i++) {
 		roi[0] = range[0] + subregion_width * i;
 		roi[1] = range[0] + subregion_width * (i + 1);
 		if (i == N) roi[1] = range[1];
 		CloudPtr subresult(new pcl::PointCloud<pcl::PointXYZI>);
+		CloudPtr sub_flat(new pcl::PointCloud<pcl::PointXYZI>);
 		CloudPtr subcloud = filterByField(cloud, "x", roi[0], roi[1]);
-		FindCurbByROI(subcloud, subresult);
+		FindCurbByROI(subcloud, subresult, sub_flat);
 		*result += *subresult;
-		
+		*flat_result += *sub_flat;
 		cout << "result:" << result->points.size() << endl;
 		//custom_pcshow(result);
 	}
 
 	if (fieldname == "y") {
-		T.row(0) = Eigen::Vector4d(0., 1., 0., 0.);
-		T.row(1) = Eigen::Vector4d(1., 0., 0., 0.);
-		T.row(2) = Eigen::Vector4d(0., 0., 1., 0.);
-		T.row(3) = Eigen::Vector4d(0., 0., 0., 1.);
-		pcl::PointCloud<pcl::PointXYZI>::Ptr transformed_result(new pcl::PointCloud<pcl::PointXYZI>);
-		pcl::transformPointCloud(*result, *transformed_result, T);
-		result = transformed_result;
+		for (auto& point : result->points) {
+			float tmp = point.x;
+			point.x = point.y;
+			point.y = tmp;
+		}
+		for (auto& point : flat_result->points) {
+			float tmp = point.x;
+			point.x = point.y;
+			point.y = tmp;
+		}
 	}
 
 	// clustering
 	DBSCAN dbscan;
-	dbscan.setInputCloud(result);
+	dbscan.setInputCloud(flat_result);
 	std::vector<int> dbclustering = dbscan.segment(0.2, 3);
 	std::vector<std::vector<int>>& clusters = dbscan.clusters;
 
@@ -277,16 +300,17 @@ CloudPtr FindCurb(CloudPtr cloud) {
 		
 		float avg = 0;
 		for (int in_cluster : cluster) {
-			avg += result->points[in_cluster].intensity;
+			avg += flat_result->points[in_cluster].intensity;
 		}
 		avg /= cluster.size();
-		if (avg > 0.1 && cluster.size() > 50) {
+		if (avg > 0 && cluster.size() > 50) {
 			cluster_inliers.insert(cluster_inliers.end(), cluster.begin(), cluster.end());
 			CloudPtr sub_curb = select(result, cluster);
 			PolyLine polyline(sub_curb, 5, false);
 			//custom_pcshow(sub_curb);
 			if (polyline.points.size() == 0)
 				continue;
+			
 			string line = to_string(cluster_idx) + " ";
 			for (auto& point : polyline.points) {
 				line += to_string(point.x) + ",";
@@ -306,7 +330,8 @@ CloudPtr FindCurb(CloudPtr cloud) {
 
 
 	result = select(result, cluster_inliers);
-
+	
+	
 
 
 	cout << "complete" << endl;

@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
     // -----------------------------------------------------------------------------------------------
 
     pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>());
-    pcl::io::loadPCDFile("lanemark_10.pcd", *cloud);
+    pcl::io::loadPCDFile(argv[1], *cloud);
     
     PolyLine k(cloud);
 }

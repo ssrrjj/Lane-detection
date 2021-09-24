@@ -15,6 +15,7 @@
 #include <iostream>
 #include <fstream>
 #include "lasStream.h"
+#include "shapefil.h"
 
 using namespace std;
 using namespace std::filesystem;
@@ -585,12 +586,54 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
     cout << "write rgb" << endl;
     writer.write<pcl::PointXYZRGB>(output_file_path + "_rgb.pcd", *final_result, false);
 
-    ofstream myfile(output_file_path + ".txt");
     //write polyline
-    
-
+    SHPHandle shp = SHPCreate((output_file_path + ".shp").c_str(), SHPT_ARCZ);
+    SHPClose(shp);
+    shp = SHPOpen((output_file_path + ".shp").c_str(), "r+b");
+    int n_vertices = 0;
+    vector<double>shp_x, shp_y, shp_z;
+    vector<int>panstart;
     for (int i = 0; i < all_marks.size(); i++) {
-        //writer.write<pcl::PointXYZI>("lanemark_" + to_string(i) + ".pcd", *all_marks[i]->points3D, false);
+        PolyLine polyline(all_marks[i]->points3D);
+        if (polyline.points.size() == 0)
+            continue;
+        panstart.push_back(shp_x.size());
+        for (int i = 0; i < polyline.points.size(); i++) {
+            auto& point = polyline.points[i];
+            if (fieldname == "x") {
+                shp_x.push_back(point.x);
+                shp_y.push_back(point.y);
+            }
+            else {
+                shp_x.push_back(point.y);
+                shp_y.push_back(point.x);
+            }
+            shp_z.push_back(point.z);
+        }
+    }
+    cout << shp_x.size() << endl;
+    for (auto panstarti : panstart)
+        cout << panstarti << " ";
+    cout << endl;
+    double* x_array = new double[shp_x.size()];
+    double* y_array = new double[shp_x.size()];
+    double* z_array = new double[shp_x.size()];
+    int* panstart_array = new int[panstart.size()];
+    memcpy(x_array, shp_x.data(), shp_x.size()*sizeof(double));
+    memcpy(y_array, shp_y.data(), shp_x.size() * sizeof(double));
+    memcpy(z_array, shp_z.data(), shp_x.size() * sizeof(double));
+    memcpy(panstart_array, panstart.data(), panstart.size() * sizeof(int));
+    SHPObject* obj = SHPCreateObject(SHPT_ARCZ, 2, panstart.size(), panstart_array, NULL, shp_x.size(), x_array, y_array, z_array, NULL);
+    SHPWriteObject(shp, -1, obj);
+    SHPDestroyObject(obj);
+    SHPClose(shp);
+    delete[]x_array;
+    delete[]y_array;
+    delete[]z_array;
+    delete[]panstart_array;
+    ofstream myfile(output_file_path + ".txt");
+    for (int i = 0; i < all_marks.size(); i++) {
+        writer.write<pcl::PointXYZI>("lanemark_" + to_string(i) + ".pcd", *all_marks[i]->points3D, false);
         PolyLine polyline(all_marks[i]->points3D);
         if (polyline.points.size() == 0)
             continue;
@@ -613,6 +656,7 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
         myfile << line;
   }
     myfile.close();
+
     
 #ifdef DEBUG
   custom_pcshow(select(cloud, lane_indset));

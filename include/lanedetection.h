@@ -15,7 +15,6 @@
 #include "dbscan.h"
 #include "utils.h"
 #include "lanepar.h"
-#include <Python.h>
 #include "lanemark.h"
 
 //#define DEBUG 1
