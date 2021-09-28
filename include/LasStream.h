@@ -1,3 +1,6 @@
+#ifndef INCLUDE_LASSTREAM_H_
+#define INCLUDE_INCLUDE_LASSTREAM_H__H_
+
 #pragma once
 #include "utils.h"
 #include <fstream>
@@ -258,3 +261,5 @@ namespace las
     
 }
 void readlas(std::string file, pcl::PointCloud<pcl::PointXYZI>::Ptr ret);
+
+#endif /* INCLUDE_UTILS_H_ */

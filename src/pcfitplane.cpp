@@ -163,6 +163,7 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr pcfitplane(pcl::PointCloud<pcl::PointXYZI>:
 void
 pcfitplaneByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, std::vector<int>& indset, Eigen::Vector4d & plane_model, float distThreshold, string fieldname)
 {
+  //custom_pcshow(cloud);
   float piece_width = 50;
   vector<float> range;
   if(fieldname=="x"){
@@ -172,6 +173,25 @@ pcfitplaneByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, std::vector<int>& i
       range = getYLimits(cloud);
   }
 
+  pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+  pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+  // Create the segmentation object
+  pcl::SACSegmentation<pcl::PointXYZI> seg;
+  // Optional
+  seg.setOptimizeCoefficients (true);
+  seg.setMaxIterations(1000);
+  seg.setProbability(0.1);
+  // Mandatory
+  seg.setModelType (pcl::SACMODEL_PLANE);
+  seg.setMethodType (pcl::SAC_RANSAC);
+  seg.setDistanceThreshold (distThreshold); // pcfitplane use 0.05 as the maxDistance, here use 0.15, need some calibration
+  seg.setOptimizeCoefficients(true);
+  seg.setAxis(Eigen::Vector3f(0.0,0.0,1.0));
+  
+
+  seg.setInputCloud (cloud);
+  seg.segment (*inliers, *coefficients);
+/*
   auto cloud_ptr = pclToO3d(cloud);
   if (VERBOSE == 1) {
       cout << "fitplane input " << endl;
@@ -189,8 +209,8 @@ pcfitplaneByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, std::vector<int>& i
   //}
 
   indset.clear();
-  for (int i = 0; i < inliers.size(); i++) {
-      indset.push_back((int)inliers[i]);
+  for (int i = 0; i < inliers->indices.size(); i++) {
+      indset.push_back((int)inliers->indices[i]);
   }
   //
 }

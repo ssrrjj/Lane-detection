@@ -7,7 +7,7 @@
 #include <mutex>
 #include "polyline.h"
 #include "dashedtrack.h"
-#include "lasStream.h"
+#include "LasStream.h"
 
 typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
@@ -69,7 +69,7 @@ pp_callback(const pcl::visualization::PointPickingEvent& event, void* args)
 
 
 }
-void main(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
 	std::string filename(argv[1]);
 	//visualizer
@@ -79,7 +79,7 @@ void main(int argc, char* argv[])
 		if (pcl::io::loadPCDFile(filename, *cloud))
 		{
 			std::cerr << "ERROR: Cannot open file " << filename << "! Aborting..." << std::endl;
-			return;
+			return -1;
 		}
 	}
 	// pcl::io::loadPCDFile ("point_cloud_00007.pcd", *cloud);
@@ -118,4 +118,5 @@ void main(int argc, char* argv[])
 		viewer->spinOnce(100);
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
+	return 0;
 }

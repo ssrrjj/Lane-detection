@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 set(CMAKE_CXX_STANDARD 17)
-project(planar_segmentation)
+project(lane_detection)
 
-find_package(PCL  REQUIRED)
+find_package(PCL 1.8  REQUIRED)
 find_package( OpenCV REQUIRED )
 find_package( shapelib REQUIRED)
 
@@ -18,8 +18,10 @@ else()
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 endif()
 
+
+
 # Find installed Open3D, which exports Open3D::Open3D
-find_package(Open3D REQUIRED)
+#find_package(Open3D REQUIRED)
 
 # cmake -DUSE_DEBUG=ON ..
 option(USE_DEBUG "Enter debug mode" OFF)
@@ -107,14 +109,14 @@ target_link_libraries (test_pcfitplane lanedetection ${PCL_LIBRARIES} Open3D::Op
 
 
 #if(WIN32)
-get_target_property(open3d_type Open3D::Open3D TYPE)
-if(open3d_type STREQUAL "SHARED_LIBRARY")
-    message(STATUS "Copying Open3D.dll to ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
-    add_custom_command(TARGET Draw POST_BUILD
-                        COMMAND ${CMAKE_COMMAND} -E copy
-                                ${CMAKE_INSTALL_PREFIX}/bin/Open3D.dll
-                                ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
-endif()
+#get_target_property(open3d_type Open3D::Open3D TYPE)
+#if(open3d_type STREQUAL "SHARED_LIBRARY")
+#    message(STATUS "Copying Open3D.dll to ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
+#    add_custom_command(TARGET lanedet POST_BUILD
+#                        COMMAND ${CMAKE_COMMAND} -E copy
+#                                ${CMAKE_INSTALL_PREFIX}/bin/Open3D.dll
+#                                ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
+#endif()
 #endif()
 
 # test shapefile

@@ -666,7 +666,7 @@ namespace las
 
     template <class T>
     template <class P>
-    static bool LasInputStream<T>::matchPointFormat(const P& las_point, const LasPointType& point_type)
+    bool LasInputStream<T>::matchPointFormat(const P& las_point, const LasPointType& point_type)
     {
         switch (point_type)
         {

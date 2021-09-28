@@ -3,6 +3,8 @@
 #include "lanedetection.h"
 #include <pcl/filters/voxel_grid.h>
 #include <math.h>
+#include <chrono>
+#include <thread>
 using namespace std;
 using namespace pcl;
 
@@ -21,7 +23,11 @@ PointXYZ pointxyz(cv::Vec3f p) {
 	return PointXYZ(p[0], p[1], p[2]);
 }
 
+<<<<<<< HEAD
 PointXYZI shift(PointXYZI p, cv::Vec3f&v) {
+=======
+PointXYZI shift(PointXYZI p, cv::Vec3f v) {
+>>>>>>> d6b809889d3085e4502baac95374c410d0dd6c73
 	p.x += v[0];
 	p.y += v[1];
 	p.z += v[2];
@@ -55,6 +61,7 @@ void showlines(CloudPtr cloud, vector<pcl::PointXYZ> points) {
 	{
 		viewer->spinOnce(100);
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		//boost::this_thread::sleep (boost::posix_time::microseconds (100000));
 	}
 }
 

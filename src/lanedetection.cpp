@@ -17,6 +17,7 @@
 #include "lasStream.h"
 #include "shapefil.h"
 
+
 using namespace std;
 using namespace std::filesystem;
 using namespace cv;
@@ -35,7 +36,8 @@ void showpolyline(CloudPtr cloud, vector<pcl::PointXYZ> points) {
     while (!viewer->wasStopped())
     {
         viewer->spinOnce(100);
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        //std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        //boost::this_thread::sleep (boost::posix_time::microseconds (100000));
     }
 }
 vector<LaneMark*>all_marks;
@@ -297,7 +299,6 @@ validateMark(CloudPtr inCloud) {
 std::vector<int>
 findLanes_adp(vector<LaneMark*> & marks, pcl::PointCloud<pcl::PointXYZI>::Ptr& inCloud, Eigen::Vector4d plane_model, float grid_size, LanePar par) {
     
-
 
     std::vector<int> indset;
     vector<int> indsetFiltered;
@@ -563,6 +564,7 @@ findLanesInPointcloud(string pcdfile, LanePar& par, bool cloud_output, string sh
 
   int final_idx = 0;
   for (auto mark : all_marks) {
+      custom_pcshow(mark->points3D);
       pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb(new pcl::PointCloud<pcl::PointXYZRGB>);
       toRGB(mark->points3D, rgb, colors[final_idx]);
       final_idx += 1;
@@ -724,7 +726,11 @@ void extractLine(CloudPtr cloud, LanePar par) {
 
         for (auto k : clusters[i]) {
             pcl::PointXYZI tmp = cloud->points[k];
-            dbresult->points.push_back(pcl::PointXYZRGB(tmp.x, tmp.y, tmp.z, colors[i][0], colors[i][1], colors[i][2]));
+            pcl::PointXYZRGB rgb_tmp(tmp.x, tmp.y, tmp.z);
+            rgb_tmp.r = colors[i][0]; 
+            rgb_tmp.g = colors[i][1]; 
+            rgb_tmp.b = colors[i][2]; 
+            dbresult->points.push_back(rgb_tmp);
         }
     }
     dbresult->height = 1;
@@ -768,7 +774,12 @@ void extractLine(CloudPtr cloud, LanePar par) {
         int line_idx = findp(mark)->idx;
         cout << line_idx << endl;
         for (auto& point : mark->points->points) {
-            result->points.push_back(pcl::PointXYZRGB(point.x, point.y, point.z, colors[line_idx][0], colors[line_idx][1], colors[line_idx][2]));
+            pcl::PointXYZRGB rgb_tmp(point.x, point.y, point.z);
+            rgb_tmp.r = colors[line_idx][0]; 
+            rgb_tmp.g = colors[line_idx][1]; 
+            rgb_tmp.b = colors[line_idx][2]; 
+            
+            result->points.push_back(rgb_tmp);
         }
 
     }

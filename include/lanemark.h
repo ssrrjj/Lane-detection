@@ -1,6 +1,8 @@
 #ifndef INCLUDE_LANEMARK_H_
 #define INCLUDE_LANEMARK_H_
 #include "utils.h"
+
+#include <boost/make_shared.hpp>
 #include "polyline.h"
 #include <pcl/filters/voxel_grid.h>
 cv::Vec4f getLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, vector<int>& idx);
@@ -63,9 +65,12 @@ public:
 
 		min_line = getLine(cloud_filtered, min_neighbor);
 		max_line = getLine(cloud_filtered, max_neighbor);
-		
-		points3D = make_shared<pcl::PointCloud<pcl::PointXYZI>>();
-		
+		#if PCL_VERSION_COMPARE(<,1,11,0)
+			
+		    points3D = boost::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+		#else
+		    points3D = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+		#endif
 		for (auto& point : cloud->points) {
 			int img_j = (int)point.x;
 			int img_i = (int)point.y;

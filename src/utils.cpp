@@ -539,13 +539,13 @@ Mat findLaneInImage(Mat uimage) {
 
 
     static Mat lookUpTable(1, 256, CV_8U);
-    static bool compute_table = TRUE;
+    static bool compute_table = true;
     float gamma_ = 0.7;
     if (compute_table) {
         uchar* p = lookUpTable.ptr();
         for (int i = 0; i < 256; ++i)
             p[i] = saturate_cast<uchar>(pow(i / 255.0, gamma_) * 255.0);
-        compute_table = FALSE;
+        compute_table = false;
     }
 
     // apply close operation
@@ -670,7 +670,7 @@ bool isRect(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud) {
   return true;
 }
 
-
+/*
 std::shared_ptr<open3d::geometry::PointCloud> pclToO3d(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud) {
 
 
@@ -688,7 +688,7 @@ std::shared_ptr<open3d::geometry::PointCloud> pclToO3d(pcl::PointCloud<pcl::Poin
     return o3d_cloud_ptr;
 
 }
-
+*/
 //pcl::PointCloud<pcl::PointXYZI>::Ptr o3dToPcl(std::shared_ptr<open3d::geometry::PointCloud> cloud) {
 //
 //    pcl::PointCloud<pcl::PointXYZI>::Ptr pcl_cloud = (new pcl::PointCloud<pcl::PointXYZI>);

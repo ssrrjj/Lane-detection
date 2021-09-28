@@ -120,13 +120,13 @@ int main(int argc, char* argv[])
 			}
 			//cout << "mask image" << endl;
 			static cv::Mat lookUpTable(1, 256, CV_8U);
-			static bool compute_table = TRUE;
+			static bool compute_table = true;
 			float gamma_ = 0.7;
 			if (compute_table) {
 				uchar* p = lookUpTable.ptr();
 				for (int i = 0; i < 256; ++i)
 					p[i] = cv::saturate_cast<uchar>(pow(i / 255.0, gamma_) * 255.0);
-				compute_table = FALSE;
+				compute_table = false;
 			}
 			
 			cv::Mat gamma_img = cv::Mat::zeros(h, w, CV_8UC1);

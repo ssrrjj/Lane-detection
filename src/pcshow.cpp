@@ -9,6 +9,9 @@
 #include <thread>
 #include <chrono>
 
+#include <boost/chrono.hpp>
+#include <boost/thread/thread.hpp>
+
 
 int user_data;
 
@@ -68,6 +71,7 @@ custom_pcshow(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud)
     {
         viewer->spinOnce(100);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
+       // boost::this_thread::sleep (boost::posix_time::microseconds (100000));
     }
 }
 
@@ -76,7 +80,11 @@ void toRGB(pcl::PointCloud<pcl::PointXYZI>::Ptr gray, pcl::PointCloud<pcl::Point
     for (int i = 0; i < gray->points.size(); i++) {
         pcl::PointXYZI tmp = gray->points[i];
         //cout << "get grey point " << i << "/"<< gray->points.size()<<endl;
-        rgb->points.push_back(pcl::PointXYZRGB(tmp.x, tmp.y, tmp.z, color[0], color[1], color[2]));
+        pcl::PointXYZRGB rgb_tmp(tmp.x, tmp.y, tmp.z);
+        rgb_tmp.r = color[0];
+        rgb_tmp.g = color[1];
+        rgb_tmp.b = color[2];
+        rgb->points.push_back(rgb_tmp);
     }
     rgb->height = 1;
     rgb->width = rgb->points.size();
@@ -136,6 +144,7 @@ custom_pcshow(pcl::PointCloud<pcl::PointXYZI>::Ptr whole, pcl::PointCloud<pcl::P
     {
         viewer->spinOnce(100);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        //boost::this_thread::sleep (boost::posix_time::microseconds (100000));
     }
 }
 
@@ -174,6 +183,7 @@ custom_pcshow( pcl::PointCloud<pcl::PointXYZI>::Ptr cloud1, pcl::PointCloud<pcl:
     {
         viewer->spinOnce(100);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        //boost::this_thread::sleep (boost::posix_time::microseconds (100000));
     }
 }
 
@@ -191,5 +201,6 @@ custom_pcshow(pcl::PointCloud<pcl::PointXYZI>::Ptr c1, pcl::PointCloud<pcl::Poin
     {
         viewer->spinOnce(100);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        //boost::this_thread::sleep (boost::posix_time::microseconds (100000));
     }
 }
