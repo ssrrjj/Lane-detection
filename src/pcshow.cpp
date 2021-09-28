@@ -28,24 +28,24 @@ viewerPsycho (pcl::visualization::PCLVisualizer& viewer)
 void
 custom_pcshow(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 {
-  pcl::visualization::CloudViewer viewer("Cloud Viewer");
-  //blocks until the cloud is actually rendered
-  viewer.showCloud(cloud);
-  //use the following functions to get access to the underlying more advanced/powerful
-  //PCLVisualizer
+    pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
+    viewer->setBackgroundColor(0, 0, 0);
+    //blocks until the cloud is actually rendered
+    //viewer.showCloud(cloud);
+    viewer->addPointCloud<pcl::PointXYZI>(cloud);
+    //use the following functions to get access to the underlying more advanced/powerful
+    //PCLVisualizer
 
-  //This will only get called once
-  // viewer.runOnVisualizationThreadOnce (viewerOneOff);
+    //This will only get called once
+    // viewer.runOnVisualizationThreadOnce (viewerOneOff);
 
-  //This will get called once per visualization iteration
-  viewer.runOnVisualizationThread (viewerPsycho);
-  while (!viewer.wasStopped ())
-  {
-  //you can also do cool processing here
-  //FIXME: Note that this is running in a separate thread from viewerPsycho
-  //and you should guard against race conditions yourself...
-  user_data++;
-  }
+    //This will get called once per visualization iteration
+    //viewer.runOnVisualizationThread(viewerPsycho);
+    while (!viewer->wasStopped())
+    {
+        viewer->spinOnce(100);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
 }
 
 void

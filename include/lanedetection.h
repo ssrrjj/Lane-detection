@@ -19,6 +19,11 @@
 
 //#define DEBUG 1
 //#define REC_DETECT 1
+
+
+void
+LaneDetection(string pcdfile, string save_path, function<void(double)> progress);
+
 void
 findLanesInPointcloud(string pcdfile);
 

@@ -416,7 +416,7 @@ findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, s
   vector<LaneMark*> marks;
 
   set<int> added;
-  std::vector<int> indsetPlane = findLanes_adp(marks, planeCloud, plane_model, 0.1, par);
+  std::vector<int> indsetPlane = findLanes_adp(marks, planeCloud, plane_model, par.grid_size, par);
 
   
 
@@ -481,7 +481,7 @@ findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, s
 }
 
 void
-findLanesInPointcloud(string pcdfile, LanePar& par){
+findLanesInPointcloud(string pcdfile, LanePar& par, bool cloud_output, string shape_file_path, function<void(double)> processor = NULL){
   std::cout<<"Running lane detection for "+pcdfile<<" ......"<<std::endl;
   //check if it is done before
   vector<string> path_name = SplitFilename(pcdfile);
@@ -541,7 +541,11 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
       pcl::PCDWriter subwriter;
       for(const auto & p: indset)
         lanepts[p]=1;
-      
+      double rate = ((roi[1]-range[0]) / (range[1]-range[0]));
+      //cout << rate << endl;
+      if (processor) {
+          processor(rate);
+      }
   }
   std::vector<int> lane_indset;
   for(int i=0; i<numPts; i++){
@@ -582,33 +586,43 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
 
   
   //if (!exists(output_file_path))
-    writer.write<pcl::PointXYZI> (output_file_path+".pcd", *select(cloud, lane_indset), false);
-    cout << "write rgb" << endl;
-    writer.write<pcl::PointXYZRGB>(output_file_path + "_rgb.pcd", *final_result, false);
-
+  if (cloud_output) {
+      writer.write<pcl::PointXYZI>(output_file_path + ".pcd", *select(cloud, lane_indset), false);
+      writer.write<pcl::PointXYZRGB>(output_file_path + "_rgb.pcd", *final_result, false);
+  }
     //write polyline
-    SHPHandle shp = SHPCreate((output_file_path + ".shp").c_str(), SHPT_ARCZ);
+  if (shape_file_path.length() == 0)
+      shape_file_path = output_file_path + ".shp";
+  
+    SHPHandle shp = SHPCreate(shape_file_path.c_str(), SHPT_ARCZ);
     SHPClose(shp);
     shp = SHPOpen((output_file_path + ".shp").c_str(), "r+b");
     int n_vertices = 0;
     vector<double>shp_x, shp_y, shp_z;
     vector<int>panstart;
     for (int i = 0; i < all_marks.size(); i++) {
-        PolyLine polyline(all_marks[i]->points3D);
+#ifdef DEBUG
+        writer.write<pcl::PointXYZI>("lanemark_" + to_string(i) + ".pcd", *all_marks[i]->points3D, false);
+#endif
+       // writer.write<pcl::PointXYZI>("lanemark_" + to_string(i) + ".pcd", *all_marks[i]->points3D, false);
+        PolyLine polyline(all_marks[i]->points3D, 20, par.downsample);
         if (polyline.points.size() == 0)
             continue;
-        panstart.push_back(shp_x.size());
-        for (int i = 0; i < polyline.points.size(); i++) {
-            auto& point = polyline.points[i];
-            if (fieldname == "x") {
-                shp_x.push_back(point.x);
-                shp_y.push_back(point.y);
+        for (int cutidx = 0; cutidx < polyline.cuts.size(); cutidx ++) {
+            
+            panstart.push_back(shp_x.size());
+            for (int i = (cutidx==0)?0:polyline.cuts[cutidx-1]; i < polyline.cuts[cutidx]; i++) {
+                auto& point = polyline.points[i];
+                if (fieldname == "x") {
+                    shp_x.push_back(point.x);
+                    shp_y.push_back(point.y);
+                }
+                else {
+                    shp_x.push_back(point.y);
+                    shp_y.push_back(point.x);
+                }
+                shp_z.push_back(point.z);
             }
-            else {
-                shp_x.push_back(point.y);
-                shp_y.push_back(point.x);
-            }
-            shp_z.push_back(point.z);
         }
     }
     cout << shp_x.size() << endl;
@@ -631,31 +645,32 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
     delete[]y_array;
     delete[]z_array;
     delete[]panstart_array;
-    ofstream myfile(output_file_path + ".txt");
-    for (int i = 0; i < all_marks.size(); i++) {
-        writer.write<pcl::PointXYZI>("lanemark_" + to_string(i) + ".pcd", *all_marks[i]->points3D, false);
-        PolyLine polyline(all_marks[i]->points3D);
-        if (polyline.points.size() == 0)
-            continue;
-        
-        //showpolyline(all_marks[i]->points3D, polyline.points);
-        string line = to_string(i) + " ";
-        for (auto & point : polyline.points) {
-            if (fieldname == "x") {
-                line += to_string(point.x) + ",";
-                line += to_string(point.y) + ",";
-            }
-            else {
-                line += to_string(point.y) + ",";
-                line += to_string(point.x) + ",";
-            }
-            line += to_string(point.z) + " ";
-            
-        }
-        line += "\n";
-        myfile << line;
-  }
-    myfile.close();
+  //  ofstream myfile(output_file_path + ".txt");
+  //  for (int i = 0; i < all_marks.size(); i++) {
+
+  //      writer.write<pcl::PointXYZI>("lanemark_" + to_string(i) + ".pcd", *all_marks[i]->points3D, false);
+  //      PolyLine polyline(all_marks[i]->points3D);
+  //      if (polyline.points.size() == 0)
+  //          continue;
+  //      
+  //      //showpolyline(all_marks[i]->points3D, polyline.points);
+  //      string line = to_string(i) + " ";
+  //      for (auto & point : polyline.points) {
+  //          if (fieldname == "x") {
+  //              line += to_string(point.x) + ",";
+  //              line += to_string(point.y) + ",";
+  //          }
+  //          else {
+  //              line += to_string(point.y) + ",";
+  //              line += to_string(point.x) + ",";
+  //          }
+  //          line += to_string(point.z) + " ";
+  //          
+  //      }
+  //      line += "\n";
+  //      myfile << line;
+  //}
+  //  myfile.close();
 
     
 #ifdef DEBUG
@@ -664,17 +679,26 @@ findLanesInPointcloud(string pcdfile, LanePar& par){
 
 }
 int VERBOSE = 0;
+void foo(double r) {
+    cout << r << endl;
+}
+void
+LaneDetection(string pcdfile, string save_path, function<void(double)> processor) {
+    LanePar par;
+    findLanesInPointcloud(pcdfile, par, false, save_path, processor);
+}
+
 void
 findLanesInPointcloud(string pcdfile, string parfile){
   LanePar par(parfile);
   VERBOSE = par.verbose;
-  findLanesInPointcloud(pcdfile, par);
+  findLanesInPointcloud(pcdfile, par, true, "", foo);
 }
 
 void
 findLanesInPointcloud(string pcdfile){
   LanePar par;
-  findLanesInPointcloud(pcdfile, par);
+  findLanesInPointcloud(pcdfile, par, true, "", NULL);
 }
 
 

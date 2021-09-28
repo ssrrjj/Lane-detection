@@ -3,7 +3,7 @@
 #include <pcl/sample_consensus/ransac.h>
 #include <pcl/sample_consensus/sac_model_line.h>
 #include <set>
-
+//#define DEBUG_POLYLINE
 using namespace cv;
 string type2str(int type) {
     string r;
@@ -54,28 +54,31 @@ vector<pcl::PointXYZ> ransac_line(CloudPtr cloud, pcl::PointIndices::Ptr inliers
 
 
     // Create the segmentation object
-    pcl::SACSegmentation<pcl::PointXYZI> seg;
-    // Optional
-    seg.setMaxIterations(1000);
-    // Mandatory
-    seg.setModelType(pcl::SACMODEL_LINE);
-    seg.setMethodType(pcl::SAC_LMEDS);
-    seg.setDistanceThreshold(0.2); 
+    //pcl::SACSegmentation<pcl::PointXYZI> seg;
+    //// Optional
+    //seg.setMaxIterations(1000);
+    //// Mandatory
+    //seg.setModelType(pcl::SACMODEL_LINE);
+    //seg.setMethodType(pcl::SAC_LMEDS);
+    //seg.setDistanceThreshold(0.2); 
 
-    seg.setInputCloud(cloud);
-    seg.segment(*inliers, *coefficients);
+    //seg.setInputCloud(cloud);
+    //seg.segment(*inliers, *coefficients);
 
-    //pcl::SampleConsensusModelLine<pcl::PointXYZI>::Ptr
-    //    model_l(new pcl::SampleConsensusModelLine<pcl::PointXYZI>(cloud));
-    //pcl::RandomSampleConsensus<pcl::PointXYZI> ransac(model_l);
-    //ransac.setDistanceThreshold(0.2);
-    //ransac.computeModel();
-    //ransac.getInliers(inliers->indices);
-    //Eigen::Vector4d 
-    //model_l->computeModelCoefficients(inliers->indices, coefficients->values)
+    pcl::SampleConsensusModelLine<pcl::PointXYZI>::Ptr
+        model_l(new pcl::SampleConsensusModelLine<pcl::PointXYZI>(cloud));
+    pcl::RandomSampleConsensus<pcl::PointXYZI> ransac(model_l);
+    ransac.setDistanceThreshold(0.2);
+    ransac.computeModel();
+    ransac.getInliers(inliers->indices);
+    coefficients->values.clear();
+    for (int i = 0; i < 6; i++) {
+        coefficients->values.push_back(ransac.model_coefficients_[i]);
+    }
     vector<pcl::PointXYZ> ret(2);
     bool first = true;
-    cout << "ransac line inliers:" << inliers->indices.size() << endl;
+    if (inliers->indices.size() == 0)
+        cout << "error: fail to fit a line using ransac." << endl;
     for (int i : inliers->indices) {
         
         pcl::PointXYZI tmp = cloud->points[i];
@@ -93,14 +96,18 @@ vector<pcl::PointXYZ> ransac_line(CloudPtr cloud, pcl::PointIndices::Ptr inliers
                 ret[0] = t;
         }
     }
-    cout << cloud->points.size() << endl;
     //custom_pcshow(cloud);
-    //show(cloud, ret);
+#ifdef DEBUG_POLYLINE
+    
+    cout << "show ransac line fitting result" << endl;
+    show(cloud, ret);
+#endif
     return ret;
 }
 
 
 PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_threshold, bool downsample) {
+    //cout <<"downsample "<< downsample << endl;
     vector<float> xlimit = getXLimits(cloud);
     if (xlimit[1] - xlimit[0] < length_threshold)
         return;
@@ -159,6 +166,7 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_thre
     points.push_back(endpts[1]);
     //show(to_start, points);
     Vec2f last_dir(N[0], N[1]);
+    //cout << "fitting dir " << N[0] << " " << N[1] << endl;
     Vec2f last_p(endpts[1].x, endpts[1].y);
     int left_idx = start_right;
     int right_idx = start_right;
@@ -166,8 +174,8 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_thre
     points.push_back(endpts[0]);
     points.push_back(endpts[1]);
     CloudPtr toshow = filterByField(cloud, "x", pts[0].x, left_x);
-    cout << points.back().x << " " << points.back().y << endl;
-    //show(toshow, points);
+    //cout << "show first segment" << endl;
+    //show(to_start, endpts);
     //---------------------------------------------bad-----------------------------------------
     /*CloudPtr to_start = filterByField(cloud_filtered, "x", pts[0].x, pts[0].x + 3);
 
@@ -235,7 +243,9 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_thre
 
 
             //show cloud and line: 
-            /*if (theta > 0) {
+            /*if (theta ==0 ) {
+                cout << "theta 0 " <<cur_inliers.size()<< endl;
+                cout << new_dir[0] << " " << new_dir[1] << endl;
                 pcl::PointCloud<pcl::PointXYZ>::Ptr tmp(new pcl::PointCloud<pcl::PointXYZ>);
                 CloudPtr tmp2 = filterByField(cloud_filtered, "x", left_x, left_x + 3);
                 for (i = left_idx; i < right_idx; i++)
@@ -274,7 +284,7 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_thre
 
 
             vector<pcl::PointXYZ> endpts = ransac_line(to_start, inliers, coefficients);
-            cout << coefficients->values[0] << " " << coefficients->values[2] << " " << coefficients->values[3] << " " << coefficients->values[4] << endl;
+            
             N = Vec3f(coefficients->values[3], coefficients->values[4], coefficients->values[5]);
             X0 = Vec3f(coefficients->values[0], coefficients->values[1], coefficients->values[2]);
 
@@ -282,10 +292,13 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_thre
             //Vec3f X1 = X0 + N * (pts[left_idx].x - X0[0]);
             //Vec3f X2 = X0 + N * (pts[i].x - X0[0]);
             //points.push_back(pcl::PointXYZ(X1[0], X1[1], X1[2]));
+            cuts.push_back(points.size());
+            points.push_back(endpts[0]);
             points.push_back(endpts[1]);
             //show(to_start, points);
             last_dir[0] = N[0];
             last_dir[1] = N[1];
+            
             left_idx = right_idx;
             left_x = pts[i].x;
         }
@@ -299,13 +312,15 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_thre
 
             
         }
+#ifdef DEBUG_POLYLINE
         toshow = filterByField(cloud, "x", pts[0].x, left_x);
-        cout << points.back().x <<" "<< points.back().y << endl;
-        //show(toshow, points);
+        cout << "show each segment" << endl;
+        show(toshow, points);
+#endif
         if (right_idx >= pts.size() - 1)
             break;
     }
-    //show(toshow, points);
+    cuts.push_back(points.size());
     //show(cloud, points);
 }
 

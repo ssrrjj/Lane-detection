@@ -181,12 +181,12 @@ pcfitplaneByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, std::vector<int>& i
   plane = cloud_ptr->SegmentPlane(distThreshold, 3, 1000);
   plane_model = get<0>(plane);
   std::vector<size_t> inliers = get<1>(plane);
-  if (VERBOSE == 1) {
-      cout << "fitplane output" << endl;
-      std::shared_ptr<open3d::geometry::PointCloud> inlier_cloud = std::make_shared<open3d::geometry::PointCloud>();
-      inlier_cloud = cloud_ptr->SelectByIndex(inliers, FALSE);
-      open3d::visualization::DrawGeometries({ inlier_cloud });
-  }
+  //if (VERBOSE == 1) {
+  //    cout << "fitplane output" << endl;
+  //    std::shared_ptr<open3d::geometry::PointCloud> inlier_cloud = std::make_shared<open3d::geometry::PointCloud>();
+  //    inlier_cloud = cloud_ptr->SelectByIndex(inliers, FALSE);
+  //    open3d::visualization::DrawGeometries({ inlier_cloud });
+  //}
 
   indset.clear();
   for (int i = 0; i < inliers.size(); i++) {

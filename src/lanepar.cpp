@@ -16,6 +16,7 @@ LanePar::parseLine(string& line){
   while(getline(ss, value, ' ')){
       if(!value.empty()) break;
   } 
+  cout << key << " " << value << endl;
   if(key=="SUBREGION_WIDTH")
       subregion_width = stof(value);
   if(key=="PLANE_DIST_THRESHOLD")
@@ -26,6 +27,16 @@ LanePar::parseLine(string& line){
       dbscan_minpts = stoi(value);
   if(key=="LANEMARK_MINPTS")
       lanemark_minpts = stoi(value);
+  if (key == "DOWNSAMPLE") {
+      if (stoi(value) == 0)
+          downsample = false;
+      else
+          downsample = true;
+  }
+  if (key == "GRID_SIZE") {
+      cout << "get grid_size" << endl;
+      grid_size = stof(value);
+  }
   if (key == "VERBOSE") {
       verbose = stoi(value);
   }
@@ -35,6 +46,8 @@ LanePar::parseLine(string& line){
       dbscan_dis = stof(value);
   if (key == "START")
       start = stoi(value);
+  
+      
 }
 
 void

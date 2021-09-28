@@ -19,7 +19,7 @@ class LanePar{
 public:
   LanePar(){
     subregion_width = 50.0;
-    plane_dist_threshold = 0.05;
+    plane_dist_threshold = 0.1;
     lane_width = 0.2;
     dbscan_minpts = 3;
     lanemark_minpts = 10;
@@ -27,6 +27,8 @@ public:
     save_to = "result";
     dbscan_dis = 10.0;
     start = 0;
+    downsample = false;
+    grid_size = 0.1f;
   }
   LanePar(string parfile):LanePar(){
     if(!parfile.empty()) parseParfile(parfile);
@@ -40,6 +42,8 @@ public:
   string save_to;
   float dbscan_dis;
   int start;
+  bool downsample;
+  float grid_size;
   void parseLine(string& line);
   void parseParfile(string parfile);
   

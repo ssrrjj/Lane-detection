@@ -26,6 +26,13 @@ option(USE_DEBUG "Enter debug mode" OFF)
 if (USE_DEBUG)
   add_definitions(-DDEBUG)
 endif()
+# cmake -DDEBUG_POLYLINE=ON ..
+option(DEBUG_POLYLINE "Enter debug mode" OFF)
+if (DEBUG_POLYLINE)
+  add_definitions(-DDEBUG_POLYLINE)
+endif()
+
+
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
