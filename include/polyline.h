@@ -7,6 +7,8 @@ public:
 	vector<int>cuts;
 	PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_threshold = 20, bool downsample = false);
 	PolyLine();
+	void smooth();
+	void writeSHP(string name);
 };
 void show(CloudPtr cloud, std::vector<pcl::PointXYZ> points);
 #endif

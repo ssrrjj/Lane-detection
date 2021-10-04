@@ -3,6 +3,7 @@
 #include <pcl/sample_consensus/ransac.h>
 #include <pcl/sample_consensus/sac_model_line.h>
 #include <set>
+#include "shapefil.h"
 //#define DEBUG_POLYLINE
 using namespace cv;
 string type2str(int type) {
@@ -161,10 +162,6 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_thre
     Vec3f X0 = Vec3f(coefficients->values[0], coefficients->values[1], coefficients->values[2]);
 
     N = N / N[0];
-    //Vec3f X1 = X0 + N * (pts[left_idx].x - X0[0]);
-    //Vec3f X2 = X0 + N * (pts[i].x - X0[0]);
-    //points.push_back(pcl::PointXYZ(X1[0], X1[1], X1[2]));
-    points.push_back(endpts[1]);
     //show(to_start, points);
     Vec2f last_dir(N[0], N[1]);
     //cout << "fitting dir " << N[0] << " " << N[1] << endl;
@@ -219,6 +216,7 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_thre
         vector<int> cur_inliers;
 
         last_p = Vec2f(points.back().x, points.back().y);
+        int best_theta = 0;
         for (theta = -10; theta < 11; theta++) {
             float rad = M_PI / 180 * theta;
             float cos_theta = cos(rad), sin_theta = sin(rad);
@@ -232,6 +230,8 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_thre
             for (i = left_idx; i < right_idx; i++) {
 
                 pcl::PointXYZ cur_p = pts[i];
+                if ((cur_p.x - last_p[0]) * new_dir[0] + (cur_p.y - last_p[1]) * new_dir[1] < 0)
+                    continue;
                 float dis = abs(a * cur_p.x + b * cur_p.y + c) / sqrt(a * a + b * b);
                 if (dis < 0.1)
                     cur_inliers.push_back(i);
@@ -240,11 +240,12 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_thre
                 best_inliers = cur_inliers;
                 most_inlier = cur_inliers.size();
                 best_dir = new_dir;
+                best_theta = theta;
             }
 
 
             //show cloud and line: 
-            /*if (theta ==0 ) {
+            /*if (theta ==-10 ) {
                 cout << "theta 0 " <<cur_inliers.size()<< endl;
                 cout << new_dir[0] << " " << new_dir[1] << endl;
                 pcl::PointCloud<pcl::PointXYZ>::Ptr tmp(new pcl::PointCloud<pcl::PointXYZ>);
@@ -310,7 +311,7 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_thre
             points.push_back(pcl::PointXYZ(pts[inlier_idx].x, pts[inlier_idx].y, pts[inlier_idx].z));
 
             left_x = pts[inlier_idx].x;
-
+            //cout << "best theta " << best_theta << endl;
             
         }
 #ifdef DEBUG_POLYLINE
@@ -326,3 +327,87 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_thre
 }
 
 PolyLine::PolyLine() {}
+
+// distance between c and line ab
+double distancetoline(pcl::PointXYZ a, pcl::PointXYZ b, pcl::PointXYZ c) {
+    Eigen::Vector3d ab(b.x - a.x, b.y - a.y, b.z - a.z);
+    ab /= ab.norm();
+    Eigen::Vector3d ac(c.x - a.x, c.y - a.y, c.z - a.z);
+    double k = ac.dot(ab);
+    double ac_norm = ac.norm();
+    double d = sqrt(ac_norm * ac_norm - k * k);
+    return d;
+}
+
+void PolyLine::writeSHP(string name) {
+    SHPHandle shp = SHPCreate(name.c_str(), SHPT_ARCZ);
+    SHPClose(shp);
+    shp = SHPOpen(name.c_str(), "r+b");
+    int n_vertices = 0;
+    vector<double>shp_x, shp_y, shp_z;
+    vector<int>panstart;
+
+    for (int cutidx = 0; cutidx < cuts.size(); cutidx++) {
+
+        panstart.push_back(shp_x.size());
+        for (int i = (cutidx == 0) ? 0 : cuts[cutidx - 1]; i < cuts[cutidx]; i++) {
+            auto& point = points[i];
+            shp_x.push_back(point.x);
+            shp_y.push_back(point.y);
+            shp_z.push_back(point.z);
+        }
+    }
+    cout << shp_x.size() << endl;
+    for (auto panstarti : panstart)
+        cout << panstarti << " ";
+    cout << endl;
+    double* x_array = new double[shp_x.size()];
+    double* y_array = new double[shp_x.size()];
+    double* z_array = new double[shp_x.size()];
+    int* panstart_array = new int[panstart.size()];
+    memcpy(x_array, shp_x.data(), shp_x.size() * sizeof(double));
+    memcpy(y_array, shp_y.data(), shp_x.size() * sizeof(double));
+    memcpy(z_array, shp_z.data(), shp_x.size() * sizeof(double));
+    memcpy(panstart_array, panstart.data(), panstart.size() * sizeof(int));
+    SHPObject* obj = SHPCreateObject(SHPT_ARCZ, 2, panstart.size(), panstart_array, NULL, shp_x.size(), x_array, y_array, z_array, NULL);
+    SHPWriteObject(shp, -1, obj);
+    SHPDestroyObject(obj);
+    SHPClose(shp);
+    delete[]x_array;
+    delete[]y_array;
+    delete[]z_array;
+    delete[]panstart_array;
+}
+
+void PolyLine::smooth() {
+    vector<pcl::PointXYZ> newpoints;
+    vector<int>newcuts;
+    for (int i = 0; i < cuts.size(); i++) {
+        int start = 0;
+        int end = cuts[i];
+        if (i != 0)
+            start = cuts[i - 1];
+        newpoints.push_back(points[start]);
+        vector<pcl::PointXYZ> discard;
+        for (int i = start + 1; i < end -1 ; i++) {
+            double error = 0;
+            for (auto& p : discard) {
+                error += distancetoline(newpoints.back(), points[i + 1], p);
+            }
+            error += distancetoline(newpoints.back(), points[i + 1], points[i]);
+            if (error / (discard.size() + 1) > 0.2) {
+                newpoints.push_back(points[i]);
+                discard.clear();
+            }
+            else {
+                discard.push_back(points[i]);
+            }
+        }
+        newpoints.push_back(points[end - 1]);
+
+        newcuts.push_back(newpoints.size());
+    }
+    points = newpoints;
+    cuts = newcuts;
+    return;
+}

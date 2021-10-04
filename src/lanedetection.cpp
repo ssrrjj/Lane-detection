@@ -528,11 +528,11 @@ findLanesInPointcloud(string pcdfile, LanePar& par, bool cloud_output, string sh
       fieldname = "x";
       range=xlimits;
   }
-  int N = (range[1]-range[0]+1)/subregion_width;
-
+  int N = (range[1]-range[0])/subregion_width;
   vector<float> roi(2,0.0);
   assert(par.start <= N);
   pcl::PCDWriter writer;
+
   for(int i=(N+par.start)%N; i<=N; i++){
       roi[0] = range[0]+subregion_width*i;
       roi[1] = range[0]+subregion_width*(i+1);
@@ -564,7 +564,7 @@ findLanesInPointcloud(string pcdfile, LanePar& par, bool cloud_output, string sh
 
   int final_idx = 0;
   for (auto mark : all_marks) {
-      custom_pcshow(mark->points3D);
+      //custom_pcshow(mark->points3D);
       pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb(new pcl::PointCloud<pcl::PointXYZRGB>);
       toRGB(mark->points3D, rgb, colors[final_idx]);
       final_idx += 1;
@@ -598,16 +598,14 @@ findLanesInPointcloud(string pcdfile, LanePar& par, bool cloud_output, string sh
   
     SHPHandle shp = SHPCreate(shape_file_path.c_str(), SHPT_ARCZ);
     SHPClose(shp);
-    shp = SHPOpen((output_file_path + ".shp").c_str(), "r+b");
+    shp = SHPOpen(shape_file_path.c_str(), "r+b");
     int n_vertices = 0;
     vector<double>shp_x, shp_y, shp_z;
     vector<int>panstart;
     for (int i = 0; i < all_marks.size(); i++) {
-#ifdef DEBUG
-        writer.write<pcl::PointXYZI>("lanemark_" + to_string(i) + ".pcd", *all_marks[i]->points3D, false);
-#endif
-       // writer.write<pcl::PointXYZI>("lanemark_" + to_string(i) + ".pcd", *all_marks[i]->points3D, false);
+        //writer.write<pcl::PointXYZI>("lanemark_" + to_string(i) + ".pcd", *all_marks[i]->points3D, false);
         PolyLine polyline(all_marks[i]->points3D, 20, par.downsample);
+        // polyline.smooth();
         if (polyline.points.size() == 0)
             continue;
         for (int cutidx = 0; cutidx < polyline.cuts.size(); cutidx ++) {
@@ -814,7 +812,7 @@ void extractLine(vector<LaneMark*>& grouped, Mat lane_mark, vector<vector<int>>&
     vector<LaneMark*> lanemarks;
     DBSCAN dbscan;
     dbscan.setInputCloud(fake_cloud);
-    std::vector<int> dbclustering = dbscan.segment(10, 1);
+    std::vector<int> dbclustering = dbscan.segment(4, 1);
     vector<vector<int>> clusters = dbscan.clusters;
     int i = 0;
     for (auto& cluster : clusters) {

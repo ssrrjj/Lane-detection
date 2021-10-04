@@ -33,6 +33,9 @@ int main(int argc, char* argv[])
     pcl::io::loadPCDFile(argv[1], *cloud);
     
     PolyLine k(cloud);
+    k.writeSHP("test.shp");
+    k.smooth();
+    k.writeSHP("test_smooth.shp");
 }
 
 

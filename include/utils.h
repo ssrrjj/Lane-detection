@@ -100,7 +100,7 @@ regionGrowSeg(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<int> & idx);
 bool isRect(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
 
 // convert pcl::pointcloud to open3d::pointcloud
-//std::shared_ptr<open3d::geometry::PointCloud> pclToO3d(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
+std::shared_ptr<open3d::geometry::PointCloud> pclToO3d(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
 
 
 cv::Mat findLaneInImage(cv::Mat uimage);

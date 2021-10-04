@@ -670,7 +670,7 @@ bool isRect(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud) {
   return true;
 }
 
-/*
+
 std::shared_ptr<open3d::geometry::PointCloud> pclToO3d(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud) {
 
 
@@ -688,7 +688,7 @@ std::shared_ptr<open3d::geometry::PointCloud> pclToO3d(pcl::PointCloud<pcl::Poin
     return o3d_cloud_ptr;
 
 }
-*/
+
 //pcl::PointCloud<pcl::PointXYZI>::Ptr o3dToPcl(std::shared_ptr<open3d::geometry::PointCloud> cloud) {
 //
 //    pcl::PointCloud<pcl::PointXYZI>::Ptr pcl_cloud = (new pcl::PointCloud<pcl::PointXYZI>);

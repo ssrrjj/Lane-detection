@@ -21,7 +21,7 @@ endif()
 
 
 # Find installed Open3D, which exports Open3D::Open3D
-#find_package(Open3D REQUIRED)
+find_package(Open3D REQUIRED)
 
 # cmake -DUSE_DEBUG=ON ..
 option(USE_DEBUG "Enter debug mode" OFF)
@@ -109,14 +109,14 @@ target_link_libraries (test_pcfitplane lanedetection ${PCL_LIBRARIES} Open3D::Op
 
 
 #if(WIN32)
-#get_target_property(open3d_type Open3D::Open3D TYPE)
-#if(open3d_type STREQUAL "SHARED_LIBRARY")
-#    message(STATUS "Copying Open3D.dll to ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
-#    add_custom_command(TARGET lanedet POST_BUILD
-#                        COMMAND ${CMAKE_COMMAND} -E copy
-#                                ${CMAKE_INSTALL_PREFIX}/bin/Open3D.dll
-#                                ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
-#endif()
+get_target_property(open3d_type Open3D::Open3D TYPE)
+if(open3d_type STREQUAL "SHARED_LIBRARY")
+    message(STATUS "Copying Open3D.dll to ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
+    add_custom_command(TARGET lanedet POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy
+                                ${CMAKE_INSTALL_PREFIX}/bin/Open3D.dll
+                                ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
+endif()
 #endif()
 
 # test shapefile

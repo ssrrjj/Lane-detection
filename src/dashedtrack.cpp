@@ -23,11 +23,8 @@ PointXYZ pointxyz(cv::Vec3f p) {
 	return PointXYZ(p[0], p[1], p[2]);
 }
 
-<<<<<<< HEAD
-PointXYZI shift(PointXYZI p, cv::Vec3f&v) {
-=======
+
 PointXYZI shift(PointXYZI p, cv::Vec3f v) {
->>>>>>> d6b809889d3085e4502baac95374c410d0dd6c73
 	p.x += v[0];
 	p.y += v[1];
 	p.z += v[2];
