@@ -376,31 +376,11 @@ findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, s
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr planeCloud = select(ptcROI, indsetROI);
   //toImage(planeCloud, plane_model, 0.1);
-  // std::cout<<"plane cloud"<<std::endl;
-  // custom_pcshow(planeCloud);
-  // std::vector<int> indset2;
-  // planeCloud = regionGrowSeg(planeCloud, indset2);
-  // indsetROI = indexMapping(indsetROI, indset2);
-  // std::cout<<"plane removed outlier"<<std::endl;
-  //custom_pcshow(planeCloud);
-
+   //std::cout<<"plane cloud"<<std::endl;
+   //custom_pcshow(planeCloud);
 //  // Step 2: Find lane marks
   std::vector<int> indsetROIinCloud = indexMapping(indsetCloud,indsetROI);
-  
-// Use Ostu Thresholding to select threshold adaptively
-// First remove outliers on the plane
-  // double ostu_th = Ostu_thresholding(planeCloud, 100);
-  // std::cout<<"ostu threshold:"<<ostu_th<<std::endl;
-  //drawHist(planeCloud, 100);
-  //pcl::PointCloud<pcl::PointXYZI>::Ptr ostu_cloud = filterByIntensity(planeCloud, ostu_th);
-  //custom_pcshow(ostu_cloud);
-  // 
-  
 
-
-  //std::vector<int> indsetPlane = findLanes(planeCloud, par);
-
-  // 
 
   if (fieldname == "y") {
       Eigen::Matrix4d T;
@@ -425,16 +405,6 @@ findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, s
   vector<LaneMark*> all_marks_tmp(all_marks);
   all_marks.clear();
 
-  //for (auto mark : all_marks_tmp) {
-  //    for (auto new_mark : marks) {
-  //        if (added.find(new_mark->idx) == added.end()) {
-  //            if (is_coline(mark, new_mark, 15, 1)) {
-  //                join(mark, new_mark);
-  //                added.insert(new_mark->idx);
-  //            }
-  //        }
-  //    }
-  //}
 
   for (auto new_mark : marks) {
       LaneMark* best_match = nullptr;
@@ -812,14 +782,21 @@ void extractLine(vector<LaneMark*>& grouped, Mat lane_mark, vector<vector<int>>&
     vector<LaneMark*> lanemarks;
     DBSCAN dbscan;
     dbscan.setInputCloud(fake_cloud);
-    std::vector<int> dbclustering = dbscan.segment(4, 1);
+    std::vector<int> dbclustering = dbscan.segment(int(0.4/par.grid_size), 1);
     vector<vector<int>> clusters = dbscan.clusters;
     int i = 0;
     for (auto& cluster : clusters) {
-
+        ofstream fout;
+        
         if (cluster.size() > 20) {
+            fout.open("cluster_" + to_string(i) + ".txt");
+            
             CloudPtr markcloud = select(fake_cloud, cluster);
             //custom_pcshow(markcloud);
+            for (auto& p : markcloud->points) {
+                fout << p.x << " " << p.y << endl;
+            }
+            fout.close();
             LaneMark* mark_profile = new LaneMark(markcloud, pixel2cloud, whole, w);
             lanemarks.push_back(mark_profile);
             i += 1;
@@ -864,7 +841,6 @@ void extractLine(vector<LaneMark*>& grouped, Mat lane_mark, vector<vector<int>>&
     }
 
     if (VERBOSE == 2){
-
         cout << "visualize" << endl;
         cv::imshow("lines", line_img);
         cv::waitKey(0);
@@ -903,8 +879,9 @@ vector<int> findLaneByImage(vector<LaneMark*>& marks, pcl::PointCloud<pcl::Point
     // pcl::PCDWriter writer;
     //writer.write<pcl::PointXYZI> ("lane_mark.pcd", *lanemark_cloud, false);
     //extractLine(lanemark_cloud, par);
-    extractLine(marks, lanemark, pixel2cloud, cloud, par);
     lanemark = removeFalsePostive(lanemark, par);
+    extractLine(marks, lanemark, pixel2cloud, cloud, par);
+    
 
     //back project points and lines in each mark from image to 3D:
     

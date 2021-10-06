@@ -5,6 +5,8 @@
 #include <math.h>
 #include <chrono>
 #include <thread>
+#include "shapefil.h"
+#include "LasStream.h"
 using namespace std;
 using namespace pcl;
 
@@ -39,28 +41,7 @@ cv::Vec3f vec(const PointXYZ& p) {
 	return cv::Vec3f(p.x, p.y, p.z);
 }
 
-void showlines(CloudPtr cloud, vector<pcl::PointXYZ> points) {
-	pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
-	viewer->setBackgroundColor(0, 0, 0);
-	//viewer->addPointCloud<pcl::PointXYZI>(cloud, "cloud");
-	pcl::PointCloud<pcl::PointXYZ>::Ptr tmp(new pcl::PointCloud<pcl::PointXYZ>);
-	for (auto p : cloud->points)
-		tmp->points.push_back(pcl::PointXYZ(p.x, p.y, p.z));
-	viewer->addPointCloud<pcl::PointXYZ>(tmp, "cloud");
-	for (int point_idx = 0; point_idx < points.size() - 1; point_idx+=2) {
-		if (point_idx == points.size() - 2) {
-			viewer->addLine(points[point_idx], points[point_idx + 1], 255, 0, 0, "line" + to_string(point_idx));
-		}
-		else
-			viewer->addLine(points[point_idx], points[point_idx + 1], 0, 255, 0, "line" + to_string(point_idx));
-	}
-	while (!viewer->wasStopped())
-	{
-		viewer->spinOnce(100);
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		//boost::this_thread::sleep (boost::posix_time::microseconds (100000));
-	}
-}
+
 
 PolyLine dashedtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtree, cv::Vec3f p1, cv::Vec3f p2, cv::Vec3f p3) {
 	
@@ -76,8 +57,6 @@ PolyLine dashedtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtre
 	cv::Vec3f dir2 = p3-p2;
 	float stripe_len = norm(dir1);
 	float stripe_gap = norm(dir2);
-	cout << "stripe_len:" << stripe_len << endl;
-	cout << "stripe_gap:" << stripe_gap << endl;
 	dir1 /= stripe_len;
 	dir2 /= stripe_gap;
 	float mid_d = stripe_gap + stripe_len / 2;
@@ -98,7 +77,7 @@ PolyLine dashedtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtre
 		std::vector<int> pointIdxRadiusSearch;
 		kdtree->radiusSearch(cur_mid, stripe_len/2 + min(1.0f, stripe_gap/2), pointIdxRadiusSearch,
 			pointRadiusSquaredDistance);
-		cout << "sub cloud size " << pointIdxRadiusSearch.size() << endl;
+		//cout << "sub cloud size " << pointIdxRadiusSearch.size() << endl;
 
 		if (pointIdxRadiusSearch.size() < 4) {
 			//ret.points.push_back(PointXYZ(cur_mid.x, cur_mid.y, cur_mid.z));
@@ -111,7 +90,7 @@ PolyLine dashedtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtre
 
 		pcfitplaneByROI(subcloud, indset, plane_model, distThreshold);
 
-		cout << "get plane" << endl;
+		//cout << "get plane" << endl;
 
 
 
@@ -223,7 +202,7 @@ PolyLine dashedtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtre
 				//show(cloud_2d, showline);
 			}
 		}
-		cout << "inliers:" << best_inliers.size() << " theta " << best_theta << endl;
+		//cout << "inliers:" << best_inliers.size() << " theta " << best_theta << endl;
 		if (best_inliers.size() < 4)
 			break;
 		cur_inliers.clear();
@@ -254,39 +233,99 @@ PolyLine dashedtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtre
 		
 		float cur_stripe_len = norm(vec(max_p) - vec(min_p));
 		float cur_stripe_gap = norm(vec(min_p) - vec(ret.points.back()));
-		cout << "cur stripe_len:" << cur_stripe_len << endl;
-		cout << "cur stripe_gap:" << cur_stripe_gap << endl;
+		//cout << "cur stripe_len:" << cur_stripe_len << endl;
+		//cout << "cur stripe_gap:" << cur_stripe_gap << endl;
 		stripe_len += 0.1 * (cur_stripe_len - stripe_len);
 		stripe_gap += 0.1 * (cur_stripe_gap - stripe_gap);
 
 		cur_mid = shift(max_p, last_dir * (stripe_gap + 0.5 * stripe_len));
-		cout << "show" << endl;
+		//cout << "show" << endl;
 		*toshow += *lane_mark_cloud;
 		//ret.points.clear();
 		candidate_lines.push_back(PointXYZ(min_p.x, min_p.y, 0));
 		candidate_lines.push_back(PointXYZ(max_p.x, max_p.y, 0));
-		//showlines(cloud_2d, candidate_lines);
 		ret.points.push_back(PointXYZ(min_p.x, min_p.y, min_p.z));
 		ret.points.push_back(PointXYZ(max_p.x, max_p.y, max_p.z));
 		//show(toshow, ret.points);
 	}
 	//show(toshow, ret.points);
 
-	ofstream myfile("line.txt");
-	for (int i = 0; i < 1; i++) {
-		//writer.write<pcl::PointXYZI>("lanemark_" + to_string(i) + ".pcd", *all_marks[i]->points3D, false);
+	//ofstream myfile("line.txt");
+	//for (int i = 0; i < 1; i++) {
+	//	//writer.write<pcl::PointXYZI>("lanemark_" + to_string(i) + ".pcd", *all_marks[i]->points3D, false);
 
 
-		//showpolyline(all_marks[i]->points3D, polyline.points);
-		string line = to_string(i) + " ";
-		for (auto& point : ret.points) {
-			line += to_string(point.x) + ",";
-			line += to_string(point.y) + ",";
-			line += to_string(point.z) + " ";
-		}
-		myfile << line;
-	}
-	myfile.close();
+	//	//showpolyline(all_marks[i]->points3D, polyline.points);
+	//	string line = to_string(i) + " ";
+	//	for (auto& point : ret.points) {
+	//		line += to_string(point.x) + ",";
+	//		line += to_string(point.y) + ",";
+	//		line += to_string(point.z) + " ";
+	//	}
+	//	myfile << line;
+	//}
+	//myfile.close();
 
 	return ret;
+}
+
+
+int dashedtrack(string cloud_file, vector<float> p1, vector<float> p2, vector<float> p3, string save_file) {
+
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>());
+
+	if (cloud_file[cloud_file.length() - 1] == 'd') {
+		if (pcl::io::loadPCDFile(cloud_file, *cloud))
+		{
+			std::cerr << "ERROR: Cannot open file " << cloud_file << "! Aborting..." << std::endl;
+			return -1;
+		}
+	}
+	// pcl::io::loadPCDFile ("point_cloud_00007.pcd", *cloud);
+	else
+		readlas(cloud_file, cloud);
+
+	pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtree(new pcl::KdTreeFLANN<pcl::PointXYZI>);
+	kdtree->setInputCloud(cloud);
+	cv::Vec3f p1_v(p1[0], p1[1], p1[2]);
+	cv::Vec3f p2_v(p2[0], p2[1], p2[2]);
+	cv::Vec3f p3_v(p3[0], p3[1], p3[2]);
+	PolyLine polyline = dashedtrack(cloud, kdtree, p1_v, p2_v, p3_v);
+
+
+	SHPHandle shp = SHPCreate(save_file.c_str(), SHPT_ARCZ);
+	SHPClose(shp);
+	shp = SHPOpen(save_file.c_str(), "r+b");
+	int n_vertices = 0;
+	vector<double>shp_x, shp_y, shp_z;
+	vector<int>panstart;
+
+	for (int cutidx = 0; cutidx < polyline.cuts.size(); cutidx++) {
+
+		panstart.push_back(shp_x.size());
+		for (int i = (cutidx == 0) ? 0 : polyline.cuts[cutidx - 1]; i < polyline.cuts[cutidx]; i++) {
+			auto& point = polyline.points[i];
+			shp_x.push_back(point.x);
+			shp_y.push_back(point.y);
+
+			shp_z.push_back(point.z);
+		}
+	}
+
+	double* x_array = new double[shp_x.size()];
+	double* y_array = new double[shp_x.size()];
+	double* z_array = new double[shp_x.size()];
+	int* panstart_array = new int[panstart.size()];
+	memcpy(x_array, shp_x.data(), shp_x.size() * sizeof(double));
+	memcpy(y_array, shp_y.data(), shp_x.size() * sizeof(double));
+	memcpy(z_array, shp_z.data(), shp_x.size() * sizeof(double));
+	memcpy(panstart_array, panstart.data(), panstart.size() * sizeof(int));
+	SHPObject* obj = SHPCreateObject(SHPT_ARCZ, 2, panstart.size(), panstart_array, NULL, shp_x.size(), x_array, y_array, z_array, NULL);
+	SHPWriteObject(shp, -1, obj);
+	SHPDestroyObject(obj);
+	SHPClose(shp);
+	delete[]x_array;
+	delete[]y_array;
+	delete[]z_array;
+	delete[]panstart_array;
 }

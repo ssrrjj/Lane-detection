@@ -430,17 +430,20 @@ Mat toImage(CloudPtr cloud, Eigen::Vector4d plane_model, float grid_size, vector
             float cy = ymin + (i + 0.5) * grid_size;
             float cz = 0;
             double pixel_value = 0;
-            int search_d = 1;
-            if (pixels[i * w + j].size() < 10)
-                search_d = 10;
+            int search_d = 0;
+            for (int ni = max(0,i- search_d); ni < min(i+ search_d+1,h); ni++) {
+                for (int nj = max(0,j- search_d); nj<min(j+ search_d+1,w); nj++) {
+                    
+                    for (const auto& point : pixels[ni * w + nj]) {
+                        Eigen::Vector3d d((double)point.x - (double)cx,
+                            (double)(point.y) - (double)(cy), (double)(point.z));
+                        w_sum += 1.0 / d.norm();
+                        pixel_value += double(point.intensity) / d.norm();
 
-            for (const auto& point : pixels[i * w + j]) {
-                Eigen::Vector3d d((double)point.x - (double)cx,
-                    (double)(point.y) - (double)(cy), (double)(point.z));
-                w_sum += 1.0 / d.norm();
-                pixel_value += double(point.intensity) / d.norm();
-
+                    }
+                }
             }
+            
             if (w_sum != 0) {
                 pixel_value /= w_sum;
 
@@ -466,6 +469,8 @@ Mat toImage(CloudPtr cloud, Eigen::Vector4d plane_model, float grid_size, vector
         imshow("image", uimage);
         waitKey(0);
     }
+    imshow("image", uimage);
+    waitKey(0);
     return uimage;
 }
 
@@ -597,7 +602,10 @@ Mat findLaneInImage(Mat uimage) {
         cv::imshow("lane mark", lanemark);
         waitKey(0);
     }
-
+    cv::imwrite("lane.png", lanemark);
+    cv::imshow("lane mark", lanemark);
+    waitKey(0);
+    
     return lanemark;
 
 }

@@ -3,6 +3,10 @@
 #include "lanedetection.h"
 #include <pcl/filters/voxel_grid.h>
 #include <math.h>
+#include <string>
+#include <shapefil.h>
+#include <vector>
+#include "LasStream.h"
 using namespace std;
 using namespace pcl;
 
@@ -130,24 +134,88 @@ PolyLine solidtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtree
 		
 		ret.points.push_back(PointXYZ(next.x,next.y,next.z));
 	}
+	ret.cuts.push_back(ret.points.size());
 	//show(toshow, ret.points);
 
-	ofstream myfile("line.txt");
-	for (int i = 0; i < 1; i++) {
-		//writer.write<pcl::PointXYZI>("lanemark_" + to_string(i) + ".pcd", *all_marks[i]->points3D, false);
-		
+	//ofstream myfile("line.txt");
+	//for (int i = 0; i < 1; i++) {
+	//	//writer.write<pcl::PointXYZI>("lanemark_" + to_string(i) + ".pcd", *all_marks[i]->points3D, false);
+	//	
 
-		//showpolyline(all_marks[i]->points3D, polyline.points);
-		string line = to_string(i) + " ";
-		for (auto& point : ret.points) {
-			line += to_string(point.x) + ",";
-			line += to_string(point.y) + ",";
-			line += to_string(point.z) + " ";
+	//	//showpolyline(all_marks[i]->points3D, polyline.points);
+	//	string line = to_string(i) + " ";
+	//	for (auto& point : ret.points) {
+	//		line += to_string(point.x) + ",";
+	//		line += to_string(point.y) + ",";
+	//		line += to_string(point.z) + " ";
 
-		}
-		myfile << line;
-	}
-	myfile.close();
+	//	}
+	//	myfile << line;
+	//}
+	//myfile.close();
 
 	return ret;
+}
+
+int solidtrack(string cloud_file, vector<float> p1, vector<float> p2, string save_file) {
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>());
+
+	if (cloud_file[cloud_file.length() - 1] == 'd') {
+		if (pcl::io::loadPCDFile(cloud_file, *cloud))
+		{
+			std::cerr << "ERROR: Cannot open file " << cloud_file << "! Aborting..." << std::endl;
+			return -1;
+		}
+	}
+	// pcl::io::loadPCDFile ("point_cloud_00007.pcd", *cloud);
+	else
+		readlas(cloud_file, cloud);
+
+	pcl::PointXYZ pclp1(p1[0], p1[1], p1[2]);
+	pcl::PointXYZ pclp2(p2[0], p2[1], p2[2]);
+	pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtree(new pcl::KdTreeFLANN<pcl::PointXYZI>);
+	kdtree->setInputCloud(cloud);
+	PolyLine polyline = solidtrack(cloud, kdtree, pclp1, pclp2);
+	
+
+	SHPHandle shp = SHPCreate(save_file.c_str(), SHPT_ARCZ);
+	SHPClose(shp);
+	shp = SHPOpen(save_file.c_str(), "r+b");
+	int n_vertices = 0;
+	vector<double>shp_x, shp_y, shp_z;
+	vector<int>panstart;
+
+	for (int cutidx = 0; cutidx < polyline.cuts.size(); cutidx++) {
+
+		panstart.push_back(shp_x.size());
+		for (int i = (cutidx == 0) ? 0 : polyline.cuts[cutidx - 1]; i < polyline.cuts[cutidx]; i++) {
+			auto& point = polyline.points[i];
+			shp_x.push_back(point.x);
+			shp_y.push_back(point.y);
+				
+			shp_z.push_back(point.z);
+		}
+	}
+	cout << shp_x.size() << endl;
+	for (auto panstarti : panstart)
+		cout << panstarti << " ";
+	cout << endl;
+	double* x_array = new double[shp_x.size()];
+	double* y_array = new double[shp_x.size()];
+	double* z_array = new double[shp_x.size()];
+	int* panstart_array = new int[panstart.size()];
+	memcpy(x_array, shp_x.data(), shp_x.size() * sizeof(double));
+	memcpy(y_array, shp_y.data(), shp_x.size() * sizeof(double));
+	memcpy(z_array, shp_z.data(), shp_x.size() * sizeof(double));
+	memcpy(panstart_array, panstart.data(), panstart.size() * sizeof(int));
+	SHPObject* obj = SHPCreateObject(SHPT_ARCZ, 2, panstart.size(), panstart_array, NULL, shp_x.size(), x_array, y_array, z_array, NULL);
+	SHPWriteObject(shp, -1, obj);
+	SHPDestroyObject(obj);
+	SHPClose(shp);
+	delete[]x_array;
+	delete[]y_array;
+	delete[]z_array;
+	delete[]panstart_array;
+
+	return 0;
 }
