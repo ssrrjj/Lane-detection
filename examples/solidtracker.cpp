@@ -47,7 +47,7 @@ pp_callback(const pcl::visualization::PointPickingEvent& event, void* args)
 	//data->viewerPtr->removePointCloud("clicked_points");
 	//data->viewerPtr->addPointCloud(data->clicked_points_3d, red, "clicked_points");
 	//data->viewerPtr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 10, "clicked_points");
-	std::cout << current_point.x << " " << current_point.y << " " << current_point.z << std::endl;
+	//std::cout << current_point.x << " " << current_point.y << " " << current_point.z << std::endl;
 	//data->viewerPtr->addSphere(current_point, 0.3, "sphere" + to_string(sphereidx));
 
 	//data->viewerPtr->spin();
@@ -56,9 +56,10 @@ pp_callback(const pcl::visualization::PointPickingEvent& event, void* args)
 		pcl::PointXYZ p1(data->clicked_points_3d->points[0].x, data->clicked_points_3d->points[0].y, data->clicked_points_3d->points[0].z);
 		pcl::PointXYZ p2(data->clicked_points_3d->points[1].x, data->clicked_points_3d->points[1].y, data->clicked_points_3d->points[1].z);
 
-
+		cout << p1.x << " " << p1.y << " " << p1.z << endl;
+		cout << p2.x << " " << p2.y << " " << p2.z << endl;
 		PolyLine line = solidtrack(data->cloud, data->kdtree, p1, p2);
-		cout << line.points.size() << endl;
+		//cout << line.points.size() << endl;
 		for (int point_idx = 0; point_idx < line.points.size() - 1; point_idx++) {
 			data->viewerPtr->addLine(line.points[point_idx], line.points[point_idx + 1], 255, 255, 255, "line" + to_string(lineidx));
 			lineidx++;
@@ -88,8 +89,8 @@ int main(int argc, char* argv[])
 		readlas(filename, cloud);
 	pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtree(new pcl::KdTreeFLANN<pcl::PointXYZI>);
 	kdtree->setInputCloud(cloud);
-	cout << "kdtree" << endl;
-	std::cout << cloud->points.size() << std::endl;
+	/*cout << "kdtree" << endl;
+	std::cout << cloud->points.size() << std::endl;*/
 
 	cloud_mutex.lock();    // for not overwriting the point cloud
 
@@ -109,7 +110,7 @@ int main(int argc, char* argv[])
 	std::cout << "Shift+click on points, then press 'Q'..." << std::endl;
 	// Spin until 'Q' is pressed:
 	viewer->spin();
-	std::cout << "done." << std::endl;
+	//std::cout << "done." << std::endl;
 
 	cloud_mutex.unlock();
 

@@ -6,6 +6,7 @@
  */
 
 #include "pcshow.h"
+#include "polyline.h"
 #include <thread>
 #include <chrono>
 
@@ -204,3 +205,19 @@ custom_pcshow(pcl::PointCloud<pcl::PointXYZI>::Ptr c1, pcl::PointCloud<pcl::Poin
         //boost::this_thread::sleep (boost::posix_time::microseconds (100000));
     }
 }
+
+void custom_pcshow(pcl::PointCloud<pcl::PointXYZ>::Ptr tmp, vector<pcl::PointXYZ> points) {
+    pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
+
+    viewer->addPointCloud<pcl::PointXYZ>(tmp, "cloud");
+    for (int point_idx = 0; point_idx < points.size() - 1; point_idx++) {
+        viewer->addLine(points[point_idx], points[point_idx + 1], 255, 0, 0, "line" + to_string(point_idx));
+    }
+    while (!viewer->wasStopped())
+    {
+        viewer->spinOnce(100);
+        //std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        //boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+    }
+}
+

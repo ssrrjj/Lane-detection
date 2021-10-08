@@ -4,6 +4,7 @@
 #include <vector>
 #include "polyline.h"
 #include "solidtrack.h"
+#include "LasStream.h"
 using namespace std;
 using namespace cv;
 
@@ -28,14 +29,18 @@ int main(int argc, char* argv[])
     // -----------------------------------------------------------------------------------------------
 	//cv::Mat uimage = cv::imread(argv[1], cv::IMREAD_ANYDEPTH);
     // -----------------------------------------------------------------------------------------------
-
-    pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>());
-    pcl::io::loadPCDFile(argv[1], *cloud);
-    
-    PolyLine k(cloud);
-    k.writeSHP("test.shp");
-    k.smooth();
-    k.writeSHP("test_smooth.shp");
+    string pcdfile = argv[1];
+    pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
+    //pcl::io::loadPCDFile(pcdfile, *cloud);
+    if (pcdfile[pcdfile.length() - 1] == 'd')
+        pcl::io::loadPCDFile(pcdfile, *cloud);
+    // pcl::io::loadPCDFile ("point_cloud_00007.pcd", *cloud);
+    else
+        readlas(pcdfile, cloud);
+    vector<float> p1{ -5419.65, 17222.9, -19.918 };
+    vector<float> p2{ -5418.95, 17224.6, -19.889 };
+    string save_file = "save.shp";
+    solidtrack(cloud, p1, p2, save_file);
 }
 
 

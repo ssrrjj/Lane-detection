@@ -326,7 +326,9 @@ PolyLine::PolyLine(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, float length_thre
     //show(cloud, points);
 }
 
-PolyLine::PolyLine() {}
+PolyLine::PolyLine() {
+    length = 0;
+}
 
 // distance between c and line ab
 double distancetoline(pcl::PointXYZ a, pcl::PointXYZ b, pcl::PointXYZ c) {
@@ -410,4 +412,42 @@ void PolyLine::smooth() {
     points = newpoints;
     cuts = newcuts;
     return;
+}
+
+void custom_pcshow(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, vector<PolyLine>& polylines) {
+    pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr tmp(new pcl::PointCloud<pcl::PointXYZ>);
+    for (auto& p : cloud->points) {
+        tmp->points.push_back(pcl::PointXYZ(p.x, p.y, p.z));
+    }
+    tmp->width = cloud->width;
+    tmp->height = cloud->height;
+    viewer->addPointCloud<pcl::PointXYZ>(tmp, "cloud");
+    int line_idx = 0;
+    for (auto& polyline : polylines)
+        for (int point_idx = 0; point_idx < polyline.points.size() - 1; point_idx++) {
+            viewer->addLine(polyline.points[point_idx], polyline.points[point_idx + 1], 255, 0, 0, "line" + to_string(line_idx));
+            line_idx += 1;
+        }
+    while (!viewer->wasStopped())
+    {
+        viewer->spinOnce(100);
+        //std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        //boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+    }
+}
+
+void PolyLine::add(pcl::PointXYZ p) {
+    if (points.size() == 0) {
+        points.push_back(p);
+        return;
+    }
+    pcl::PointXYZ& last = points.back();
+    points.push_back(p);
+    
+    Eigen::Vector3f last_v(last.x, last.y, last.z);
+    Eigen::Vector3f p_v(p.x, p.y, p.z);
+    length += (p_v - last_v).norm();
+
 }

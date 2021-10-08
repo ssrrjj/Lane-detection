@@ -37,7 +37,20 @@ getXLimits(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud)
 }
 
 vector<float>
-getYLimits(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud)
+getXLimits(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud)
+{
+    vector<float> xlimits(2, 0.0);
+    if (cloud->points.size() == 0) return xlimits;
+    xlimits[0] = cloud->points[0].x;
+    xlimits[1] = xlimits[0];
+    for (const auto& pt : cloud->points) {
+        if (pt.x > xlimits[1]) xlimits[1] = pt.x;
+        if (pt.x < xlimits[0]) xlimits[0] = pt.x;
+    }
+    return xlimits;
+}
+
+vector<float> getYLimits(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud)
 {
   vector<float> ylimits(2,0.0);
   if(cloud->points.size()==0) return ylimits;
@@ -48,6 +61,20 @@ getYLimits(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud)
       if(pt.y<ylimits[0]) ylimits[0] = pt.y;
   }
   return ylimits;
+}
+
+vector<float>
+getYLimits(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud)
+{
+    vector<float> ylimits(2, 0.0);
+    if (cloud->points.size() == 0) return ylimits;
+    ylimits[0] = cloud->points[0].y;
+    ylimits[1] = ylimits[0];
+    for (const auto& pt : cloud->points) {
+        if (pt.y > ylimits[1]) ylimits[1] = pt.y;
+        if (pt.y < ylimits[0]) ylimits[0] = pt.y;
+    }
+    return ylimits;
 }
 
 vector<float>
@@ -78,6 +105,20 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr select(pcl::PointCloud<pcl::PointXYZI>::Ptr
   return output;
 }
 
+pcl::PointCloud<pcl::PointXYZ>::Ptr select(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, pcl::PointIndices::Ptr& inliers)
+{
+    pcl::PointCloud<pcl::PointXYZ>::Ptr output(new pcl::PointCloud<pcl::PointXYZ>);
+
+    // Extract the inliers
+    pcl::ExtractIndices<pcl::PointXYZ> extract;
+    extract.setInputCloud(cloud);
+    extract.setIndices(inliers);
+    extract.setNegative(false);
+    extract.filter(*output);
+
+    return output;
+}
+
 pcl::PointCloud<pcl::PointXYZI>::Ptr select(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, std::vector<int> &inliers)
 {
   pcl::PointCloud<pcl::PointXYZI>::Ptr output(new pcl::PointCloud<pcl::PointXYZI>);
@@ -87,6 +128,17 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr select(pcl::PointCloud<pcl::PointXYZI>::Ptr
   output->width = output->points.size();
   output->height = 1; // 1 means unorganized point cloud
   return output;
+}
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr select(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, std::vector<int>& inliers)
+{
+    pcl::PointCloud<pcl::PointXYZ>::Ptr output(new pcl::PointCloud<pcl::PointXYZ>);
+    for (int i = 0; i < inliers.size(); i++) {
+        output->points.push_back(cloud->points[inliers[i]]);
+    }
+    output->width = output->points.size();
+    output->height = 1; // 1 means unorganized point cloud
+    return output;
 }
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr filterByField(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, string fieldname, float lb, float ub)
@@ -469,8 +521,8 @@ Mat toImage(CloudPtr cloud, Eigen::Vector4d plane_model, float grid_size, vector
         imshow("image", uimage);
         waitKey(0);
     }
-    imshow("image", uimage);
-    waitKey(0);
+    //imshow("image", uimage);
+    //waitKey(0);
     return uimage;
 }
 
@@ -603,8 +655,8 @@ Mat findLaneInImage(Mat uimage) {
         waitKey(0);
     }
     cv::imwrite("lane.png", lanemark);
-    cv::imshow("lane mark", lanemark);
-    waitKey(0);
+    //cv::imshow("lane mark", lanemark);
+    //waitKey(0);
     
     return lanemark;
 

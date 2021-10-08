@@ -16,18 +16,50 @@
 #include <fstream>
 #include "lasStream.h"
 #include "shapefil.h"
-
+#include <pcl/common/pca.h>
 
 using namespace std;
 using namespace std::filesystem;
 using namespace cv;
+void custom_pcshow(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, vector<bool>& visited, vector<int>& cloud2pixel, vector<pcl::PointXYZ>& points) {
+    pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr visited_c(new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr unvisited_c(new pcl::PointCloud<pcl::PointXYZRGB>);
+    for (int i = 0; i < cloud->points.size(); i++) {
+        auto& p = cloud->points[i];
+        if (visited[cloud2pixel[i]]) {
+
+            visited_c->points.push_back(pcl::PointXYZRGB(p.x, p.y, p.z, 0, 255, 0));
+        }
+        else {
+            unvisited_c->points.push_back(pcl::PointXYZRGB(p.x, p.y, p.z, 255, 255, 255));
+        }
+    }
+    visited_c->width = visited_c->points.size();
+    visited_c->height = 1;
+    unvisited_c->width = unvisited_c->points.size();
+    unvisited_c->height = 1;
+    viewer->addPointCloud<pcl::PointXYZRGB>(visited_c, "cloud1");
+    viewer->addPointCloud<pcl::PointXYZRGB>(unvisited_c, "cloud2");
+    int line_idx = 0;
+    for (int point_idx = 0; point_idx < points.size() - 1; point_idx++) {
+        viewer->addLine(points[point_idx], points[point_idx + 1], 255, 0, 0, "line" + to_string(point_idx));
+    }
+    while (!viewer->wasStopped())
+    {
+        viewer->spinOnce(100);
+        //std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        //boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+    }
+}
 
 void showpolyline(CloudPtr cloud, vector<pcl::PointXYZ> points) {
     pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
     viewer->setBackgroundColor(0, 0, 0);
     //viewer->addPointCloud<pcl::PointXYZI>(cloud, "cloud");
     pcl::PointCloud<pcl::PointXYZ>::Ptr tmp(new pcl::PointCloud<pcl::PointXYZ>);
-    for (auto p : cloud->points)
+    for (auto & p : cloud->points)
         tmp->points.push_back(pcl::PointXYZ(p.x, p.y, p.z));
     viewer->addPointCloud<pcl::PointXYZ>(tmp, "cloud");
     for (int point_idx = 0; point_idx < points.size() - 1; point_idx++) {
@@ -41,6 +73,8 @@ void showpolyline(CloudPtr cloud, vector<pcl::PointXYZ> points) {
     }
 }
 vector<LaneMark*>all_marks;
+vector<PolyLine> all_polylines;
+pcl::PointCloud<pcl::PointXYZI>::Ptr all_lane_ptc(new pcl::PointCloud<pcl::PointXYZI>);
 int
 evalLaneCluster(pcl::PointCloud<pcl::PointXYZI>::Ptr& fullcloud, std::vector<int> &cluster, float laneW)
 {
@@ -402,45 +436,45 @@ findLanesByROI(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, vector<float> roi, s
   
 
   // cout << "match with previous marks" << endl;
-  vector<LaneMark*> all_marks_tmp(all_marks);
-  all_marks.clear();
+  //vector<LaneMark*> all_marks_tmp(all_marks);
+  //all_marks.clear();
 
 
-  for (auto new_mark : marks) {
-      LaneMark* best_match = nullptr;
-      float score;
-      float best_score = 100000;
-      for (auto mark : all_marks_tmp) {
-          if (is_coline(mark, new_mark, 15, 1, &score)) {
-              if (score < best_score) {
-                  best_score = score;
-                  best_match = mark;
-              }
-          }
-      }
-      
-      if (best_match != nullptr)
-          join(new_mark, best_match);
-  }
+  //for (auto new_mark : marks) {
+  //    LaneMark* best_match = nullptr;
+  //    float score;
+  //    float best_score = 100000;
+  //    for (auto mark : all_marks_tmp) {
+  //        if (is_coline(mark, new_mark, 15, 1, &score)) {
+  //            if (score < best_score) {
+  //                best_score = score;
+  //                best_match = mark;
+  //            }
+  //        }
+  //    }
+  //    
+  //    if (best_match != nullptr)
+  //        join(new_mark, best_match);
+  //}
 
-  for (auto new_mark : marks) {
-      all_marks_tmp.push_back(new_mark);
-      //if (added.find(new_mark->idx) == added.end()) {
-      //    all_marks.push_back(new_mark);
-      //}
-      //else
-      //    delete new_mark;
-  }
-  vector<LaneMark*>all_marks_tmp2 = group2(all_marks_tmp);
-  
-  for (auto mark : all_marks_tmp2) {
-      if (mark->points->points.size() > 30)
-          all_marks.push_back(mark);
-  }
-  
+  //for (auto new_mark : marks) {
+  //    all_marks_tmp.push_back(new_mark);
+  //    //if (added.find(new_mark->idx) == added.end()) {
+  //    //    all_marks.push_back(new_mark);
+  //    //}
+  //    //else
+  //    //    delete new_mark;
+  //}
+  //vector<LaneMark*>all_marks_tmp2 = group2(all_marks_tmp);
+  //
+  //for (auto mark : all_marks_tmp2) {
+  //    if (mark->points->points.size() > 30)
+  //        all_marks.push_back(mark);
+  //}
+  //
 
-  if (VERBOSE == 2) 
-    custom_pcshow(all_marks);
+  //if (VERBOSE == 2) 
+  //  custom_pcshow(all_marks);
   
 #ifdef DEBUG
   // custom_pcshow(select(planeCloud, indsetPlane));
@@ -502,13 +536,14 @@ findLanesInPointcloud(string pcdfile, LanePar& par, bool cloud_output, string sh
   vector<float> roi(2,0.0);
   assert(par.start <= N);
   pcl::PCDWriter writer;
-
+  
   for(int i=(N+par.start)%N; i<=N; i++){
       roi[0] = range[0]+subregion_width*i;
       roi[1] = range[0]+subregion_width*(i+1);
       if(i==N) roi[1] = range[1];
       std::vector<int> indset = findLanesByROI(cloud, roi, fieldname, par);
       pcl::PointCloud<pcl::PointXYZI>::Ptr lane_ptc = select(cloud, indset);
+      
       pcl::PCDWriter subwriter;
       for(const auto & p: indset)
         lanepts[p]=1;
@@ -522,24 +557,24 @@ findLanesInPointcloud(string pcdfile, LanePar& par, bool cloud_output, string sh
   for(int i=0; i<numPts; i++){
       if(lanepts[i]>0) lane_indset.push_back(i); // if(lanepts[i]>0) indset.push_back(i);
   }
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr final_result(new pcl::PointCloud<pcl::PointXYZRGB>);
-  vector<Vec3b> colors;
-  for (int i = 0; i < all_marks.size(); i++)
-  {
-      int b = theRNG().uniform(0, 256);
-      int g = theRNG().uniform(0, 256);
-      int r = theRNG().uniform(0, 256);
-      colors.push_back(Vec3b((uchar)b, (uchar)g, (uchar)r));
-  }
+  //pcl::PointCloud<pcl::PointXYZRGB>::Ptr final_result(new pcl::PointCloud<pcl::PointXYZRGB>);
+  //vector<Vec3b> colors;
+  //for (int i = 0; i < all_marks.size(); i++)
+  //{
+  //    int b = theRNG().uniform(0, 256);
+  //    int g = theRNG().uniform(0, 256);
+  //    int r = theRNG().uniform(0, 256);
+  //    colors.push_back(Vec3b((uchar)b, (uchar)g, (uchar)r));
+  //}
 
-  int final_idx = 0;
-  for (auto mark : all_marks) {
-      //custom_pcshow(mark->points3D);
-      pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb(new pcl::PointCloud<pcl::PointXYZRGB>);
-      toRGB(mark->points3D, rgb, colors[final_idx]);
-      final_idx += 1;
-      *final_result += *rgb;
-  }
+  //int final_idx = 0;
+  //for (auto mark : all_marks) {
+  //    //custom_pcshow(mark->points3D);
+  //    pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb(new pcl::PointCloud<pcl::PointXYZRGB>);
+  //    toRGB(mark->points3D, rgb, colors[final_idx]);
+  //    final_idx += 1;
+  //    *final_result += *rgb;
+  //}
   if (fieldname == "y") {
       Eigen::Matrix4d T;
       T.row(0) = Eigen::Vector4d(0., 1., 0., 0.);
@@ -547,20 +582,20 @@ findLanesInPointcloud(string pcdfile, LanePar& par, bool cloud_output, string sh
       T.row(2) = Eigen::Vector4d(0., 0., 1., 0.);
       T.row(3) = Eigen::Vector4d(0., 0., 0., 1.);
       pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_final_result(new pcl::PointCloud<pcl::PointXYZRGB>);
-      pcl::transformPointCloud(*final_result, *transformed_final_result, T);
-      final_result = transformed_final_result;
+      //pcl::transformPointCloud(*final_result, *transformed_final_result, T);
+      //final_result = transformed_final_result;
   }
   std::cout<<"Lane detection completed!"<<std::endl;
 
   // Write the extracted plane to disk
   
-  
+  custom_pcshow(all_lane_ptc, all_polylines);
 
   
   //if (!exists(output_file_path))
   if (cloud_output) {
       writer.write<pcl::PointXYZI>(output_file_path + ".pcd", *select(cloud, lane_indset), false);
-      writer.write<pcl::PointXYZRGB>(output_file_path + "_rgb.pcd", *final_result, false);
+      //writer.write<pcl::PointXYZRGB>(output_file_path + "_rgb.pcd", *final_result, false);
   }
     //write polyline
   if (shape_file_path.length() == 0)
@@ -572,9 +607,9 @@ findLanesInPointcloud(string pcdfile, LanePar& par, bool cloud_output, string sh
     int n_vertices = 0;
     vector<double>shp_x, shp_y, shp_z;
     vector<int>panstart;
-    for (int i = 0; i < all_marks.size(); i++) {
+    for (int i = 0; i < all_polylines.size(); i++) {
         //writer.write<pcl::PointXYZI>("lanemark_" + to_string(i) + ".pcd", *all_marks[i]->points3D, false);
-        PolyLine polyline(all_marks[i]->points3D, 20, par.downsample);
+        PolyLine& polyline = all_polylines[i];
         // polyline.smooth();
         if (polyline.points.size() == 0)
             continue;
@@ -760,6 +795,213 @@ void extractLine(CloudPtr cloud, LanePar par) {
     }
 }
 
+void trackLine(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, LanePar par) {
+    //store cloud in 2D grid
+    pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+    kdtree.setInputCloud(cloud);
+    pcl::PCA<pcl::PointXYZI> pca_model;
+
+    vector<float> xrange = getXLimits(cloud);
+    vector<float> yrange = getYLimits(cloud);
+    int h, w;
+    float grid_size = par.grid_size;
+    h = ceil((yrange[1] - yrange[0]) / grid_size);
+    w = ceil((xrange[1] - xrange[0]) / grid_size);
+
+    vector<vector<int>> pixel2cloud(h*w);
+    vector<int> cloud2pixel(cloud->points.size());
+    vector<bool> visited(h * w, false);
+    for (int pi = 0; pi < cloud->points.size(); pi++) {
+        auto& point = cloud->points[pi];
+        int i = floor((point.y - yrange[0]) / grid_size);
+        int j = floor((point.x - xrange[0]) / grid_size);
+        pixel2cloud[i * w + j].push_back(pi);
+        cloud2pixel[pi] = i * w + j;
+    }
+    
+    // loop
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            if (pixel2cloud[i * w + j].size() > 0 && visited[i*w+j] == false) {
+                cout << i << " " << j << endl;
+                // get points within pca_radius. Do pca to check linearity of point (i,j) 
+                float pca_radius = 3.0/2;
+                int search_d = ceil(pca_radius / grid_size);
+                vector<pcl::PointXYZ> neighbor;
+                for (int ni = max(0, i - search_d); ni < min(h, i + search_d + 1); ni++) {
+                    for (int nj = max(0, j - search_d); nj < min(w, j + search_d + 1); nj++) {
+
+                        if (pixel2cloud[ni * w + nj].size() > 0 && visited[ni*w+nj] == false) {
+                            for (int k : pixel2cloud[ni * w + nj]) {
+                                neighbor.push_back(pcl::PointXYZ(cloud->points[k].x, cloud->points[k].y, cloud->points[k].z));
+                            }
+                        }
+                    }
+                }
+                cout << neighbor.size() << endl;
+                if (neighbor.size() < 20)
+                    continue;
+                Mat data_pts = Mat(neighbor.size(), 2, CV_64F);
+                for (int i = 0; i < data_pts.rows; i++)
+                {
+                    data_pts.at<double>(i, 0) = (double)neighbor[i].x;
+                    data_pts.at<double>(i, 1) = (double)neighbor[i].y;
+                }
+                cout << "perform pca" << endl;
+                //Perform PCA analysis
+                PCA pca_analysis(data_pts, Mat(), PCA::DATA_AS_ROW);
+                //Store the eigenvalues and eigenvectors
+                vector<Eigen::Vector2d> eigen_vecs(2);
+                vector<double> eigen_val(2);
+                for (int i = 0; i < 2; i++)
+                {
+                    eigen_vecs[i] = Eigen::Vector2d(pca_analysis.eigenvectors.at<double>(i, 0),
+                        pca_analysis.eigenvectors.at<double>(i, 1));
+                    eigen_val[i] = pca_analysis.eigenvalues.at<double>(i);
+                }
+                
+                cout << eigen_val[0] / eigen_val[1] << endl;
+                
+                // visualize the result
+                //pcl::PointCloud<pcl::PointXYZ>::Ptr fake_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+                //for (int i = 0; i < neighbor.size(); i++) {
+                //    fake_cloud->points.push_back(pcl::PointXYZ(neighbor[i].x, neighbor[i].y, neighbor[i].z));
+                //}
+                //fake_cloud->width = fake_cloud->points.size();
+                //fake_cloud->height = 1;
+                //vector<pcl::PointXYZ> line;
+                //eigen_vecs[0] /= eigen_vecs[0].norm();
+                ///*line.push_back(pcl::PointXYZ(j, i, 0));
+                //line.push_back(pcl::PointXYZ(j + 3 * eigen_vecs[0][0], i + 3 * eigen_vecs[0][1], 0));*/
+                //pcl::PointXYZ c = cloud->points[pixel2cloud[i*w+j][0]];
+                //line.push_back(pcl::PointXYZ(c.x, c.y, c.z));
+                //line.push_back(pcl::PointXYZ(c.x + 3 * eigen_vecs[0][0], c.y + 3 * eigen_vecs[0][1], c.z));
+
+                //custom_pcshow(fake_cloud, line);
+                //custom_pcshow(cloud, line);
+                // start a line from the center of neighbor
+                if (eigen_val[0] / eigen_val[1] < 10)
+                    continue;
+                pcl::PointXYZ center(0, 0, 0);
+                for (auto& point : neighbor) {
+                    center.x += point.x / neighbor.size();
+                    center.y += point.y / neighbor.size();
+                    center.z += point.z / neighbor.size();
+                }
+                
+                PolyLine polyline= PolyLine();
+                polyline.add(center);
+                float expand_d = 1.5; // length to expand
+                for (int direction = 1; direction > -2; direction -= 2) 
+                {
+                    Eigen::Vector2f last_dir;
+                    last_dir[0] = (float)eigen_vecs[0][0];
+                    last_dir[1] = (float)eigen_vecs[0][1];
+                    last_dir.normalize();
+                    last_dir *= direction;
+                    if (direction == -1) {
+                        reverse(polyline.points.begin(), polyline.points.end());
+                    }
+                    cout << "start " << direction << endl;
+                    while (1) {
+                        
+                        Eigen::Vector2f last_p;
+                        last_p[0] = polyline.points.back().x;
+                        last_p[1] = polyline.points.back().y;
+                        vector<float>pointRadiusSquaredDistance;
+                        vector<int>pointIdxRadiusSearch;
+                        int nn1 = kdtree.radiusSearch(polyline.points.back(), (double)expand_d, pointIdxRadiusSearch, pointRadiusSquaredDistance);
+                        cout << "n neighbor: " << pointIdxRadiusSearch.size() << endl;
+
+                        vector<int> best_inliers;
+                        vector<int> cur_inliers;
+                        int most_inlier = 0;
+                        Eigen::Vector2f best_dir;
+                        pcl::PointXYZ next_p;
+                        float next_d;
+
+                        for (int theta = -10; theta < 11; theta++) {
+                            //cout << theta << endl;
+                            float rad = M_PI / 180 * theta;
+                            float cos_theta = cos(rad), sin_theta = sin(rad);
+                            pcl::PointXYZ farthest_p;
+                            float farthest_d = 0;
+                            Eigen::Vector2f new_dir(cos_theta * last_dir[0] - sin_theta * last_dir[1], sin_theta * last_dir[0] + cos_theta * last_dir[1]);
+
+                            float a = new_dir[1], b = -new_dir[0], c = new_dir[0] * last_p[1] - new_dir[1] * last_p[0];
+                            cur_inliers.clear();
+                            for (auto& pi : pointIdxRadiusSearch) {
+                                //cout << pi << " " << cloud2pixel.size() << endl;
+                                //cout << cloud2pixel[pi] << visited.size() << endl;
+                                if (visited[cloud2pixel[pi]])
+                                    continue;
+                                auto& cur_p = cloud->points[pi];
+                                float cur_d = (cur_p.x - last_p[0]) * new_dir[0] + (cur_p.y - last_p[1]) * new_dir[1];
+                                //cout << "cur_d: " << cur_d << endl;
+                                if (cur_d < 0)
+                                    continue;
+
+                                float dis = abs(a * cur_p.x + b * cur_p.y + c) / sqrt(a * a + b * b);
+                                //cout << "dis: " << dis << endl;
+                                if (dis < 0.1) {
+                                    cur_inliers.push_back(i);
+                                    if (cur_d > farthest_d) {
+                                        farthest_d = cur_d;
+                                        farthest_p = cur_p;
+                                    }
+                                }
+
+                            }
+                            if (cur_inliers.size() > most_inlier) {
+                                best_inliers = cur_inliers;
+                                most_inlier = cur_inliers.size();
+                                best_dir = new_dir;
+                                next_p = farthest_p;
+                                next_d = farthest_d;
+                                // best_theta = theta;
+                            }
+                        }
+                        cout << best_inliers.size() << endl;
+                        if (best_inliers.size() == 0) {
+                            cout << "end" << endl;
+                            //custom_pcshow(cloud, polyline.points);
+                            
+                            if (direction == -1)
+                            {
+                                // custom_pcshow(cloud, visited, cloud2pixel, polyline.points);
+                                polyline.cuts.push_back(polyline.points.size());
+                                if (polyline.points.size() > 1 && polyline.length > 1) {
+                                    polyline.smooth();
+                                    all_polylines.push_back(polyline);
+
+                                }
+                                
+                            }
+                            break;
+
+                        }
+                        for (auto& pi : pointIdxRadiusSearch) {
+                            auto& cur_p = cloud->points[pi];
+                            float a = best_dir[1], b = -best_dir[0], c = best_dir[0] * last_p[1] - best_dir[1] * last_p[0];
+                            float dis = abs(a * cur_p.x + b * cur_p.y + c) / sqrt(a * a + b * b);
+                            float cur_d = (cur_p.x - last_p[0]) * best_dir[0] + (cur_p.y - last_p[1]) * best_dir[1];
+                            if ((cur_d > 0||polyline.points.size()>1) && dis < 0.8) {
+                                //cout << "visited " << cloud2pixel[pi] / w << " " << cloud2pixel[pi] % w << endl;
+                                visited[cloud2pixel[pi]] = true;
+                            }
+                        }
+                        last_dir = best_dir;
+
+                        polyline.add(next_p);
+                        // 
+                       
+                    }
+                }
+            }
+        }
+    }
+}
+
 void extractLine(vector<LaneMark*>& grouped, Mat lane_mark, vector<vector<int>>& pixel2cloud, pcl::PointCloud<pcl::PointXYZI>::Ptr whole, LanePar par) {
     //cout << "extractline" << endl;
     // create a point cloud
@@ -878,35 +1120,7 @@ vector<int> findLaneByImage(vector<LaneMark*>& marks, pcl::PointCloud<pcl::Point
     //CloudPtr lanemark_cloud = select(cloud, lane_mark_idx);
     // pcl::PCDWriter writer;
     //writer.write<pcl::PointXYZI> ("lane_mark.pcd", *lanemark_cloud, false);
-    //extractLine(lanemark_cloud, par);
     lanemark = removeFalsePostive(lanemark, par);
-    extractLine(marks, lanemark, pixel2cloud, cloud, par);
-    
-
-    //back project points and lines in each mark from image to 3D:
-    
-    for (auto mark : marks) {
-        mark->min_line[2] += img_x/grid_size;
-        mark->min_line[3] += img_y/grid_size;
-        mark->max_line[2] += img_x / grid_size;
-        mark->max_line[3] += img_y / grid_size;
-        mark->maxx += img_x / grid_size;
-        mark->maxy += img_y / grid_size;
-        mark->minx += img_x / grid_size;
-        mark->miny += img_y / grid_size;
-        for (auto& point : mark->points->points) {
-            point.x += img_x / grid_size;
-            point.y += img_y / grid_size;
-        }
-    }
-
-
-    if (VERBOSE == 1) {
-        imshow("remove fp", lanemark);
-        waitKey(0);
-    }
-    
-
 
     lane_mark_idx.clear();
     for (int i = 0; i < h; i++) {
@@ -920,6 +1134,44 @@ vector<int> findLaneByImage(vector<LaneMark*>& marks, pcl::PointCloud<pcl::Point
         }
     }
     CloudPtr lane_mark_cloud = select(cloud, lane_mark_idx);
+    *all_lane_ptc += *lane_mark_cloud;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr mark_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    for (auto& point : lane_mark_cloud->points) {
+        mark_cloud->points.push_back(pcl::PointXYZ(point.x, point.y, point.z));
+    }
+    mark_cloud->width = mark_cloud->points.size();
+    mark_cloud->height = 1;
+    cout << "track line" << endl;
+    trackLine(mark_cloud, par);
+    //extractLine(marks, lanemark, pixel2cloud, cloud, par);
+    
+
+    //back project points and lines in each mark from image to 3D:
+    
+    //for (auto mark : marks) {
+    //    mark->min_line[2] += img_x/grid_size;
+    //    mark->min_line[3] += img_y/grid_size;
+    //    mark->max_line[2] += img_x / grid_size;
+    //    mark->max_line[3] += img_y / grid_size;
+    //    mark->maxx += img_x / grid_size;
+    //    mark->maxy += img_y / grid_size;
+    //    mark->minx += img_x / grid_size;
+    //    mark->miny += img_y / grid_size;
+    //    for (auto& point : mark->points->points) {
+    //        point.x += img_x / grid_size;
+    //        point.y += img_y / grid_size;
+    //    }
+    //}
+
+
+    if (VERBOSE == 1) {
+        imshow("remove fp", lanemark);
+        waitKey(0);
+    }
+    
+
+
+    
     
 
 
@@ -945,3 +1197,6 @@ Mat removeFalsePostive(Mat lane_mark, LanePar par) {
     }
     return ret;
 }
+
+
+

@@ -56,8 +56,11 @@ void savepcd(CloudPtr cloud, string filename);
 vector<float>
 getXLimits(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
 
-vector<float>
-getYLimits(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
+vector<float> getXLimits(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud);
+
+vector<float> getYLimits(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
+
+vector<float> getYLimits(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud);
 
 vector<float>
 getILimits(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
@@ -67,6 +70,10 @@ select(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, pcl::PointIndices::Ptr &inli
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr
 select(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud, std::vector<int> &inliers);
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr select(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, pcl::PointIndices::Ptr& inliers);
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr select(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, std::vector<int>& inliers);
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr
 filterByField(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, string fieldname, float lb, float ub);

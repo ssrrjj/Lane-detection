@@ -270,20 +270,9 @@ PolyLine dashedtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtre
 }
 
 
-int dashedtrack(string cloud_file, vector<float> p1, vector<float> p2, vector<float> p3, string save_file) {
+int dashedtrack(CloudPtr cloud, vector<float> p1, vector<float> p2, vector<float> p3, string save_file) {
 
-	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>());
 
-	if (cloud_file[cloud_file.length() - 1] == 'd') {
-		if (pcl::io::loadPCDFile(cloud_file, *cloud))
-		{
-			std::cerr << "ERROR: Cannot open file " << cloud_file << "! Aborting..." << std::endl;
-			return -1;
-		}
-	}
-	// pcl::io::loadPCDFile ("point_cloud_00007.pcd", *cloud);
-	else
-		readlas(cloud_file, cloud);
 
 	pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtree(new pcl::KdTreeFLANN<pcl::PointXYZI>);
 	kdtree->setInputCloud(cloud);

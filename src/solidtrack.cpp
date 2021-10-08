@@ -11,7 +11,7 @@ using namespace std;
 using namespace pcl;
 
 PolyLine solidtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtree, PointXYZ p1, PointXYZ p2) {
-	cout << "begin track" << endl;
+	//cout << "begin track" << endl;
 	PolyLine ret = PolyLine();
 	ret.points.push_back(p1);
 	ret.points.push_back(p2);
@@ -28,7 +28,7 @@ PolyLine solidtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtree
 		std::vector<int> pointIdxRadiusSearch;
 		kdtree->radiusSearch(cur, 1.5, pointIdxRadiusSearch,
 			pointRadiusSquaredDistance);
-		cout << "sub cloud size " << pointIdxRadiusSearch.size() << endl;
+		//cout << "sub cloud size " << pointIdxRadiusSearch.size() << endl;
 		if (pointIdxRadiusSearch.size() < 4)
 			break;
 		subcloud = select(cloud, pointIdxRadiusSearch);
@@ -37,14 +37,14 @@ PolyLine solidtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtree
 
 		pcfitplaneByROI(subcloud, indset, plane_model, distThreshold);
 
-		cout << "get plane" << endl;
+		//cout << "get plane" << endl;
 		CloudPtr plane = select(subcloud, indset);
 		//custom_pcshow(plane);
 		vector<vector<int>> pixel2cloud;
 		vector<int> lane_mark_idx;
 		float img_x, img_y;
 		cv::Mat uimage = toImage(plane, plane_model, 0.1, pixel2cloud);
-		cout << uimage.cols << " " << uimage.rows << endl;
+		//cout << uimage.cols << " " << uimage.rows << endl;
 		/*cv::imshow("image", uimage);
 		cv::waitKey(0);*/
 
@@ -111,7 +111,7 @@ PolyLine solidtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtree
 				best_theta = theta;
 			}
 		}
-		cout <<"inliers:"<< best_inliers.size() << " theta "<<best_theta<<endl;
+		//cout <<"inliers:"<< best_inliers.size() << " theta "<<best_theta<<endl;
 		if (best_inliers.size() <4)
 			break;
 		cur_inliers.clear();
@@ -129,7 +129,7 @@ PolyLine solidtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtree
 		}
 		last_dir = best_dir;
 		cur = next;
-		cout << "show" << endl;
+		//cout << "show" << endl;
 		*toshow += *lane_mark_cloud;
 		
 		ret.points.push_back(PointXYZ(next.x,next.y,next.z));
@@ -157,19 +157,7 @@ PolyLine solidtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtree
 	return ret;
 }
 
-int solidtrack(string cloud_file, vector<float> p1, vector<float> p2, string save_file) {
-	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>());
-
-	if (cloud_file[cloud_file.length() - 1] == 'd') {
-		if (pcl::io::loadPCDFile(cloud_file, *cloud))
-		{
-			std::cerr << "ERROR: Cannot open file " << cloud_file << "! Aborting..." << std::endl;
-			return -1;
-		}
-	}
-	// pcl::io::loadPCDFile ("point_cloud_00007.pcd", *cloud);
-	else
-		readlas(cloud_file, cloud);
+int solidtrack(CloudPtr cloud, vector<float> p1, vector<float> p2, string save_file) {
 
 	pcl::PointXYZ pclp1(p1[0], p1[1], p1[2]);
 	pcl::PointXYZ pclp2(p2[0], p2[1], p2[2]);
@@ -196,10 +184,10 @@ int solidtrack(string cloud_file, vector<float> p1, vector<float> p2, string sav
 			shp_z.push_back(point.z);
 		}
 	}
-	cout << shp_x.size() << endl;
-	for (auto panstarti : panstart)
-		cout << panstarti << " ";
-	cout << endl;
+	//cout << shp_x.size() << endl;
+	//for (auto panstarti : panstart)
+	//	cout << panstarti << " ";
+	//cout << endl;
 	double* x_array = new double[shp_x.size()];
 	double* y_array = new double[shp_x.size()];
 	double* z_array = new double[shp_x.size()];
