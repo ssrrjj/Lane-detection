@@ -270,7 +270,7 @@ PolyLine dashedtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtre
 }
 
 
-int dashedtrack(CloudPtr cloud, vector<float> p1, vector<float> p2, vector<float> p3, string save_file) {
+void dashedtrack(CloudPtr cloud, vector<float> p1, vector<float> p2, vector<float> p3, vector<vector<float>> & ret) {
 
 
 
@@ -280,9 +280,15 @@ int dashedtrack(CloudPtr cloud, vector<float> p1, vector<float> p2, vector<float
 	cv::Vec3f p2_v(p2[0], p2[1], p2[2]);
 	cv::Vec3f p3_v(p3[0], p3[1], p3[2]);
 	PolyLine polyline = dashedtrack(cloud, kdtree, p1_v, p2_v, p3_v);
+	ret.resize(polyline.points.size());
+	int pi = 0;
+	for (auto& p : polyline.points) {
+		ret[pi].push_back(p.x);
+		ret[pi].push_back(p.y);
+		ret[pi].push_back(p.z);
+	}
 
-
-	SHPHandle shp = SHPCreate(save_file.c_str(), SHPT_ARCZ);
+	/*SHPHandle shp = SHPCreate(save_file.c_str(), SHPT_ARCZ);
 	SHPClose(shp);
 	shp = SHPOpen(save_file.c_str(), "r+b");
 	int n_vertices = 0;
@@ -316,5 +322,5 @@ int dashedtrack(CloudPtr cloud, vector<float> p1, vector<float> p2, vector<float
 	delete[]x_array;
 	delete[]y_array;
 	delete[]z_array;
-	delete[]panstart_array;
+	delete[]panstart_array;*/
 }

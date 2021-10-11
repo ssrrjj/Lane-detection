@@ -8,6 +8,7 @@
 #include <pcl/common/distances.h>
 #include "data_structure.h"
 #include "las_consts_structs.h"
+#include "PointXYZIT.h"
 using namespace std;
 
 namespace las
@@ -1164,6 +1165,81 @@ void readlas(string file, pcl::PointCloud<pcl::PointXYZI>::Ptr ret) {
         ret->width = ret->points.size();
         has_point = las_in_src->get_next_point(point_data);
         
+    }
+    return;
+}
+
+
+void readlas(string file, pcl::PointCloud<PointXYZIT>::Ptr ret) {
+    unique_ptr<las::BaseLasInputStream> las_in_src;
+    las_in_src = make_unique<las::LasInputStream<las::LegacyLasHeader>>(file);
+    if (!las_in_src->isOpen()) {
+        printf("Failed to open file. Error code is %d\n", errno);
+        return;
+    }
+    float version_dest = las_in_src->get_version();
+    if (version_dest > 1.35)
+    {
+        las_in_src.reset(new las::LasInputStream<las::LasHeader>(file));
+    }
+
+    las::LasPointType input_point_type_src = las_in_src->get_point_format();
+
+    point_cloud point;
+    double GPS_time;
+    double xyz[3], newxyz[3];
+    uint16_t intensity;
+    uint16_t rgb[3] = {};
+    uint8_t num_returns, return_id;
+    uint8_t classification = 0;
+    double scale[3], offset[3];
+    char point_data[128];
+    double basexyz[3];
+    bool flag = true;
+
+    las_in_src->get_scale_factor(scale);
+    las_in_src->get_offset(offset);
+    bool has_point = las_in_src->get_next_point(point_data);
+    while (has_point)
+    {
+        switch (input_point_type_src)
+        {
+        case las::LasPointType::LasPoint1:
+            las::getPointData<las::LasPoint1>(point_data, GPS_time, xyz, intensity, num_returns, return_id);
+            break;
+        case las::LasPointType::LasPoint3:
+            las::getPointData<las::LasPoint3>(point_data, GPS_time, xyz, intensity, num_returns, return_id);
+            break;
+        case las::LasPointType::LasPoint6:
+            las::getPointData<las::LasPoint6>(point_data, GPS_time, xyz, intensity, num_returns, return_id);
+            break;
+        case las::LasPointType::LasPoint7:
+            las::getPointData<las::LasPoint7>(point_data, GPS_time, xyz, intensity, num_returns, return_id);
+            break;
+        default:
+            break;
+        }
+        // transform point
+        //cout << offset[0] << " " << offset[1] << " " << offset[2] << endl;
+        for (int i = 0; i < 3; i++)
+        {
+            point.xyz[i] = xyz[i] * scale[i] + offset[i];
+            if (flag)
+            {
+                basexyz[i] = point.xyz[i];
+            }
+            //point.xyz[i] = point.xyz[i] - basexyz[i];
+        }
+
+        flag = false;
+        point.time_of_week = GPS_time;
+
+        PointXYZIT pcl_point((float)point.xyz[0], (float)point.xyz[1], (float)point.xyz[2], (float)intensity, GPS_time);
+        ret->points.push_back(pcl_point);
+        ret->height = 1;
+        ret->width = ret->points.size();
+        has_point = las_in_src->get_next_point(point_data);
+
     }
     return;
 }

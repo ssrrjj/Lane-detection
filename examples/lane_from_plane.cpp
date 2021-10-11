@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
     vector<float> p1{ -5419.65, 17222.9, -19.918 };
     vector<float> p2{ -5418.95, 17224.6, -19.889 };
     string save_file = "save.shp";
-    solidtrack(cloud, p1, p2, save_file);
+    //solidtrack(cloud, p1, p2, save_file);
 }
 
 

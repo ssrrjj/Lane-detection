@@ -1,5 +1,5 @@
 #include "curbdetect.h"
-#include "lasStream.h"
+#include "LasStream.h"
 #include <filesystem>
 
 using namespace std::filesystem;

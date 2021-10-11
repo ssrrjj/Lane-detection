@@ -11,3 +11,10 @@ demo/
 *.las
 *.odt
 *.docx
+
+*.bat
+
+.cproject
+.project
+.settings/
+tmp

@@ -451,3 +451,8 @@ void PolyLine::add(pcl::PointXYZ p) {
     length += (p_v - last_v).norm();
 
 }
+
+//check if two polyline colinear
+//bool is_colinear(PolyLine& line0, PolyLine& line2) {
+//    Eigen::Vector3f line1_end
+//}

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 set(CMAKE_CXX_STANDARD 17)
 project(lane_detection)
 
-find_package(PCL 1.8  REQUIRED)
+find_package(PCL 1.10 REQUIRED)
 find_package( OpenCV REQUIRED )
 find_package( shapelib REQUIRED)
 
@@ -108,7 +108,7 @@ target_link_libraries (test_pcfitplane lanedetection ${PCL_LIBRARIES} Open3D::Op
 
 
 
-#if(WIN32)
+if(WIN32)
 get_target_property(open3d_type Open3D::Open3D TYPE)
 if(open3d_type STREQUAL "SHARED_LIBRARY")
     message(STATUS "Copying Open3D.dll to ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
@@ -117,7 +117,7 @@ if(open3d_type STREQUAL "SHARED_LIBRARY")
                                 ${CMAKE_INSTALL_PREFIX}/bin/Open3D.dll
                                 ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 endif()
-#endif()
+endif()
 
 # test shapefile
 #add_executable (test_shp test/shapefile.cpp)

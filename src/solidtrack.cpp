@@ -157,16 +157,22 @@ PolyLine solidtrack(CloudPtr cloud, pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtree
 	return ret;
 }
 
-int solidtrack(CloudPtr cloud, vector<float> p1, vector<float> p2, string save_file) {
+void solidtrack(CloudPtr cloud, vector<float> p1, vector<float> p2, vector<vector<float>>& ret) {
 
 	pcl::PointXYZ pclp1(p1[0], p1[1], p1[2]);
 	pcl::PointXYZ pclp2(p2[0], p2[1], p2[2]);
 	pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtree(new pcl::KdTreeFLANN<pcl::PointXYZI>);
 	kdtree->setInputCloud(cloud);
 	PolyLine polyline = solidtrack(cloud, kdtree, pclp1, pclp2);
-	
+	ret.resize(polyline.points.size());
+	int pi = 0;
+	for (auto& p : polyline.points) {
+		ret[pi].push_back(p.x);
+		ret[pi].push_back(p.y);
+		ret[pi].push_back(p.z);
+	}
 
-	SHPHandle shp = SHPCreate(save_file.c_str(), SHPT_ARCZ);
+	/*SHPHandle shp = SHPCreate(save_file.c_str(), SHPT_ARCZ);
 	SHPClose(shp);
 	shp = SHPOpen(save_file.c_str(), "r+b");
 	int n_vertices = 0;
@@ -184,10 +190,6 @@ int solidtrack(CloudPtr cloud, vector<float> p1, vector<float> p2, string save_f
 			shp_z.push_back(point.z);
 		}
 	}
-	//cout << shp_x.size() << endl;
-	//for (auto panstarti : panstart)
-	//	cout << panstarti << " ";
-	//cout << endl;
 	double* x_array = new double[shp_x.size()];
 	double* y_array = new double[shp_x.size()];
 	double* z_array = new double[shp_x.size()];
@@ -205,5 +207,5 @@ int solidtrack(CloudPtr cloud, vector<float> p1, vector<float> p2, string save_f
 	delete[]z_array;
 	delete[]panstart_array;
 
-	return 0;
+	return 0;*/
 }

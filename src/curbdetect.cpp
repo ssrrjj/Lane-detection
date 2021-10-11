@@ -3,7 +3,14 @@
 #include <math.h>
 #include <polyline.h>
 Voxel::Voxel() {
-	points = make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+#if PCL_VERSION_COMPARE(<,1,11,0)
+
+	points = boost::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+#else
+	points = std::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+#endif
+
+	//points = make_shared<pcl::PointCloud<pcl::PointXYZI>>();
 	points->height = 1;
 	points->width = 0;
 	max_z = 0;
